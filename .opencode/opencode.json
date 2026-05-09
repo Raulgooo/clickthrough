@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "C:/Users/raulg/Desktop/clickthru/.opencode/get-shit-done/*": "allow"
+    },
+    "external_directory": {
+      "C:/Users/raulg/Desktop/clickthru/.opencode/get-shit-done/*": "allow"
+    }
+  }
+}
