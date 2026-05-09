@@ -50,9 +50,40 @@ Core principle:
 
 > The agent decides what interface should exist. The renderer decides how to make it safe, native-feeling, and consistent.
 
+## Agent Loop Source Of Truth
+
+Use `AGENT_LOOP.md` as the architecture source for Clickthrough's model-agnostic agent harness.
+
+Use `HARNESS.md` as the concrete implementation source for harness policies, tool execution, approval, compaction, hooks, budget limits, MCP loading, and verification.
+
+Clickthrough should be its own browser-native intent agent. It can delegate to specialist tools or agents, but the user talks to CT and CT owns the loop.
+
+The harness should make weaker models useful and stronger models excellent through:
+
+- explicit state machine
+- typed context packets
+- bounded memory
+- typed tool contracts
+- validated UI schema
+- approval gates
+- deterministic execution
+- verification after actions
+
 ## GenUI Stack
 
-Preferred hackathon stack:
+Use `STACK.md` as the source of truth for stack decisions.
+
+Current preferred hackathon stack:
+
+- Vite + React + TypeScript.
+- React overlay renderer injected into the active page.
+- AG-UI for runtime event streaming.
+- Clickthrough primitive schema from `UI_PRIMITIVES.md`.
+- Deep browser DOM scanner as a first-class subsystem.
+- MCP Apps where useful, but browser tools are likely more important for the demo.
+- CopilotKit only if it accelerates hotkey, state, callbacks, or approval flow without turning the product into chat.
+- Full backend for agent orchestration, web search, tool calls, schema validation, action planning, verification, and memory.
+- Variable overlay modes: inline prompt, anchored popover, side panel, spotlight, fullscreen workbench, and native insertion.
 
 ### Runtime UI Protocol
 

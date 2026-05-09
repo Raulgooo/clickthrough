@@ -152,18 +152,29 @@ The Generative UI Global Hackathon names **A2UI**, **AG-UI**, **MCP Apps**, and 
 
 Clickthrough's planned stack:
 
+- **Vite + React + TypeScript** for the browser overlay prototype.
 - **AG-UI** for streaming agent state and progressive UI generation.
 - **Clickthrough primitive schema** for the runtime UI tree.
+- **Clickthrough agent loop** for model-agnostic planning, tool routing, approval, execution, and verification.
+- **Harness policies** inspired by strong agent-loop systems: budgeted turns, typed tools, permissions, hooks, compaction, streaming, and verification.
+- **Deep DOM scanner** for page understanding, capability mapping, host style sampling, and action targeting.
+- **Full backend** for agent orchestration, web search, tool calls, schema validation, action planning, verification, and memory.
 - **MCP Apps** for tool/app discovery and external capabilities where useful.
 - **CopilotKit** if it accelerates hotkey prompt, agent state wiring, action callbacks, or human approval flow.
 - **A2UI** as a schema/protocol influence if it helps quickly.
 
 The product must never collapse into a chat interface. These tools serve the generated overlay experience.
 
+See [`STACK.md`](./STACK.md) for the current stack decision.
+
 ## Repository Guide
 
 - [`HANDBOOK.md`](./HANDBOOK.md): hackathon rules and judging frame.
 - [`DEMO.md`](./DEMO.md): recorded demo script and storyboard.
+- [`STACK.md`](./STACK.md): chosen prototype stack and boundaries.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md): ASCII system architecture and ownership map.
+- [`AGENT_LOOP.md`](./AGENT_LOOP.md): model-agnostic agent harness and state machine.
+- [`HARNESS.md`](./HARNESS.md): browser-agent harness spec for tools, memory, approval, UI validation, and verification.
 - [`UI_PRIMITIVES.md`](./UI_PRIMITIVES.md): primitive schema and component requirements.
 - [`OPEN_DESIGN_PROMPT.md`](./OPEN_DESIGN_PROMPT.md): prompt for generating visual primitives in Open Design.
 - [`AGENTS.md`](./AGENTS.md): working notes for AI agents and team members.
