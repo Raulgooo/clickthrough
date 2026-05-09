@@ -4,3 +4,4 @@ export { default as ActDemo } from "./ActDemo";
 export { default as RespondDemo } from "./RespondDemo";
 export { default as SummarizeDemo } from "./SummarizeDemo";
 export { default as CompareDemo } from "./CompareDemo";
+export { default as HarnessDemo } from "./HarnessDemo";

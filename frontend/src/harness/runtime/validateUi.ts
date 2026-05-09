@@ -5,12 +5,15 @@ export type UiValidationResult =
   | { valid: false; errors: string[] };
 
 const KNOWN_PRIMITIVES = new Set([
+  // A. Shell
   "OverlayRoot",
   "PromptBar",
   "CTMark",
   "AnchorHighlight",
   "PageDimmer",
   "OverlayPositioner",
+
+  // B. Layout
   "Panel",
   "Stack",
   "Grid",
@@ -19,23 +22,106 @@ const KNOWN_PRIMITIVES = new Set([
   "Rail",
   "Spacer",
   "Divider",
+
+  // C. Text & Status
   "StatusPill",
   "Label",
   "Heading",
   "BodyText",
   "Callout",
   "InlineQuote",
+  "CodeBlock",
+  "Metadata",
+
+  // D. Inputs
   "Button",
+  "IconButton",
   "TextField",
   "TextArea",
+  "Select",
+  "Toggle",
   "SegmentedControl",
-  "Skeleton",
-  "ProgressList",
+  "CheckboxRow",
+  "RadioRow",
+  "Slider",
+
+  // E. Evidence
+  "QuoteCard",
+  "IdentityCard",
+  "EvidenceSource",
+  "AlertList",
+  "ProgressBar",
+  "ConclusionCard",
+  "SourceTrail",
+  "EvidenceStack",
+
+  // F. Visual
+  "Timeline",
+  "SequenceDiagram",
+  "Stepper",
+  "ComparisonTable",
+  "AnnotatedDiagram",
+  "FlowDiagram",
+
+  // G. Actions
+  "StepList",
+  "ScopeMatrix",
   "ApprovalGate",
   "ExecutionLog",
+  "CopyField",
   "VerificationResult",
+
+  // H. Safety
   "RiskSummary",
   "UncertaintyNote",
+  "SourceQualityBadge",
+  "SensitiveContextGuard",
+  "PrivateModeBadge",
+  "AuditTrail",
+
+  // I. State
+  "Skeleton",
+  "ProgressList",
+  "EmptyState",
+  "ErrorState",
+  "SuccessState",
+  "LoadingSpinner",
+
+  // J. Trust & Security
+  "SecurityBoundary",
+  "TrustIndicator",
+  "PermissionBadge",
+  "DataStream",
+  "ScanLine",
+  "FloatingIndicator",
+
+  // K. Agent System
+  "AgentStateIndicator",
+  "ToolProgressCard",
+  "BudgetBar",
+  "MemoryChip",
+  "ClarificationPrompt",
+  "IntentConfirmation",
+  "FollowUpBar",
+  "InterruptControl",
+
+  // L. Navigation
+  "Accordion",
+  "Tabs",
+  "Breadcrumb",
+  "Tooltip",
+  "Badge",
+  "Tag",
+
+  // M. Frames
+  "ImageFrame",
+  "MediaFrame",
+  "DiagramFrame",
+  "ScreenshotFrame",
+  "CarouselFrame",
+  "CodeFrame",
+  "MapFrame",
+  "ChartFrame",
 ]);
 
 export function validateGeneratedUi(root: ClickthroughNode): UiValidationResult {

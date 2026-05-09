@@ -8,12 +8,14 @@ import {
   RespondDemo,
   SummarizeDemo,
   CompareDemo,
+  HarnessDemo,
 } from '@/demos';
 
-type Route = 'gallery' | 'verify' | 'understand' | 'act' | 'respond' | 'summarize' | 'compare';
+type Route = 'gallery' | 'verify' | 'understand' | 'act' | 'respond' | 'summarize' | 'compare' | 'harness';
 
 const navItems: { route: Route; label: string }[] = [
   { route: 'gallery', label: 'Gallery' },
+  { route: 'harness', label: 'Harness' },
   { route: 'verify', label: 'Verify' },
   { route: 'understand', label: 'Understand' },
   { route: 'act', label: 'Act' },
@@ -66,6 +68,7 @@ export const App = () => {
       {/* Main content */}
       <main className="pt-12">
         {route === 'gallery' && <PrimitiveGallery />}
+        {route === 'harness' && <HarnessDemo />}
         {route === 'verify' && <VerifyDemo />}
         {route === 'understand' && <UnderstandDemo />}
         {route === 'act' && <ActDemo />}

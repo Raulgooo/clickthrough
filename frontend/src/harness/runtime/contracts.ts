@@ -50,6 +50,8 @@ export type PageContextPacket = {
   nearbyElements: DomElementSummary[];
   capabilityMap: PageCapabilitySummary[];
   hostTheme: HostTheme;
+  screenshot?: string; // base64 data URL
+  cursorPosition?: { x: number; y: number };
 };
 
 export type PageCapabilitySummary = {
