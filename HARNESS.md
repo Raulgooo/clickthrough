@@ -1,5 +1,11 @@
 # Clickthrough Harness Spec
 
+## Hackathon Scope Update
+
+The live MVP harness is read-only. It observes page context, runs read-only tools, streams generated UI, grounds web facts, and prepares user-facing outputs. It must block or defer any request that would click, fill, submit, post, create credentials, change permissions, purchase, delete, or otherwise mutate the page/account.
+
+Action execution, approval-to-mutation, SharkAuth automation, and post-action verification remain documented as post-hackathon architecture, not the current implementation target.
+
 ## Purpose
 
 Clickthrough needs a strong browser-agent harness, not a fragile prompt loop.
@@ -12,11 +18,12 @@ The harness should make any model useful by controlling:
 - generated UI schema
 - permissions
 - user approval
-- browser actions
-- verification
+- read-only tool execution
+- grounded verification
+- post-MVP browser actions
 - streaming overlay state
 
-The model proposes. The harness validates, routes, gates, executes, and verifies.
+The model proposes. The harness validates, routes, gates, executes read-only tools, and verifies grounded outputs. Post-MVP mutation uses the same policy boundary.
 
 ## Clean-Room Lessons Applied
 
@@ -26,12 +33,12 @@ The useful pattern from strong agent harnesses is simple:
 2. Send compact structured context, not raw dumps.
 3. Load tool schemas only when needed.
 4. Run read-only tools in parallel.
-5. Run mutating tools sequentially.
+5. Defer mutating tools in the hackathon MVP; run them sequentially only post-MVP.
 6. Enforce permissions outside the model.
 7. Validate generated UI before rendering.
 8. Compact memory deliberately.
 9. Let users interrupt or redirect.
-10. End every action with verification.
+10. End every grounded claim or post-MVP action with verification.
 
 Everything below is specific to Clickthrough.
 
@@ -860,4 +867,3 @@ The clean-room lessons above were informed by public Claude Code docs on agent l
 - https://code.claude.com/docs/en/agent-sdk/user-input
 - https://code.claude.com/docs/en/features-overview
 - https://code.claude.com/docs/en/best-practices
-

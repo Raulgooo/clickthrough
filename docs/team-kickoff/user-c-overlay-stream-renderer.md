@@ -25,7 +25,7 @@ Own the frontend event consumer and generated UI renderer. The overlay should co
 
 - Frontend can render a full overlay from a streamed `ClickthroughNode` tree.
 - Overlays prefer selection/focus/cursor anchoring before falling back to generic placement.
-- Approval request events surface a clear gate.
+- Trust-boundary, uncertainty, and deferred-action states render clearly.
 - Evidence UI can embed source images without relying on Exa response shapes.
-- CT mark and sensitive-action styling remain distinct from host adaptation.
+- CT mark and generated-content styling remain distinct from host adaptation when trust clarity matters.
 - Desktop and narrow viewport layouts do not overlap.

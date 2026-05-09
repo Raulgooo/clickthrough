@@ -1,5 +1,11 @@
 # Clickthrough Stack Decision
 
+## Hackathon Scope Update
+
+The live hackathon path is a read-only web copilot. It can observe page context, search/fetch sources, explain, verify, summarize, draft, compare, highlight, and prepare next steps. It must not click, submit, post, create credentials, change permissions, or mutate account state.
+
+Browser action execution, SharkAuth automation, and full backend transport remain post-hackathon architecture. User B should focus on page perception, anchors, host theme, and context packets.
+
 ## Current Decision
 
 This is the stack direction for the hackathon prototype.

@@ -18,7 +18,7 @@ Own demo coherence, integration pressure, acceptance checks, and recording readi
 - Create page fixtures only where they help test repeatability; fixtures must not contain final UI trees or fake event timelines.
 - Make the verify flow evidence-first with uncertainty by checking what the harness actually renders, including web source images/favicons when available and text-only fallback when absent.
 - Make the PKCE flow visibly interactive and diagram-first by checking selected text extraction and generated visual primitives.
-- Make the SharkAuth flow use real scanner context, approval, execution, and verification by coordinating with User B.
+- Replace the SharkAuth action flow with a Jarvis-like assist/navigate flow that uses real page context from User B and generates a contextual copilot surface without mutating the page.
 - Make the response flow private, respectful, and non-sending by default by checking sensitive-context and approval behavior.
 - Own the integration checklist across Users A, B, and C.
 - Keep AG-UI streaming and MCP tool discovery visible in narration without making the product sound like a protocol demo.
@@ -30,3 +30,4 @@ Own demo coherence, integration pressure, acceptance checks, and recording readi
 - The recording script fits 2-4 minutes.
 - Each scene has a reset/replay path for recording.
 - Acceptance checks catch regressions before recording, including web evidence contract drift between harness and renderer.
+- The third scene makes Clickthrough feel like a copilot for the web, not a one-off dashboard automation.

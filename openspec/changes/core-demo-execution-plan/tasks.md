@@ -6,6 +6,8 @@
 
 ### Critical Discovery
 
+**Current hackathon scope override:** User B's SharkAuth/browser-action work is deferred. Existing browser action executor code, if present, is post-hackathon infrastructure only. The live MVP path is read-only page perception plus Jarvis-like generated copilot surfaces.
+
 **Codex created substantial runtime code that was NEVER COMMITTED.** During this audit, untracked files were found in:
 - `frontend/src/harness/runtime/` — harness session, contracts, policy, UI validation
 - `frontend/src/browser/` — DOM scanner, action executor, host theme sampler, page bridge
@@ -96,24 +98,22 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
 - [ ] 2.14 Add a fast style-planner step that produces a compact non-authoritative `PrimordialStyleBrief` for the principal CT agent.
   - **Signal**: This should run before model-backed UI generation and be cached per page/intent where useful.
 
-## 3. User B - DOM Scanner, Browser Tools, And SharkAuth
+## 3. User B - Page Perception, Context Bridge, And Demo Anchors
 
-- [x] 3.1 Build a generic DOM scanner that extracts visible text, selected text, accessible names, interactive elements, forms, tables, dialogs, anchors, and bounding boxes.
-  - **Status**: DONE (uncommitted). `frontend/src/browser/domScanner.ts` has `scanDom()` with interactive element detection, visibility filtering, accessible labels, bounds, and capability mapping. **NEEDS COMMIT.**
+- [x] 3.1 Build a lightweight page perception bridge that extracts visible text, selected text, accessible names, interactive elements, anchors, and bounding boxes for context.
+  - **Status**: DONE (uncommitted). `frontend/src/browser/domScanner.ts` has `scanDom()` with interactive element detection, visibility filtering, accessible labels, bounds, and capability mapping. Treat this as read-only perception for the hackathon MVP.
 - [x] 3.2 Implement host theme sampling for font, color roles, border, radius, density, and control style.
   - **Status**: DONE (uncommitted). `frontend/src/browser/hostTheme.ts` has `sampleHostTheme()` using `getComputedStyle` with mode inference. **NEEDS COMMIT.**
-- [x] 3.3 Implement stable element references that survive normal page interactions and support re-scan after navigation or DOM changes.
-  - **Status**: DONE (uncommitted). `domScanner.ts` assigns `data-ct-element-id` attributes. `actionExecutor.ts` queries by these IDs. **NEEDS COMMIT.**
-- [x] 3.4 Implement browser action tools for highlight, click, fill, select, waitFor, and verify.
-  - **Status**: DONE (uncommitted). `frontend/src/browser/actionExecutor.ts` has `executeBrowserActionPlan()` with click, fill, select, waitFor, verify. **NEEDS COMMIT.**
-- [ ] 3.5 Connect the scanner to the harness as `dom.scan` and browser action tools with typed inputs/outputs.
-  - **Signal**: `pageBridge.ts` exists and calls `scanDom()` + `sampleHostTheme()`. BUT not wired to harness session input. Need to pass `PageContextPacket` into `HarnessSessionInput`.
-- [ ] 3.6 Target the real SharkAuth app or safe SharkAuth test workspace and discover the API key creation workflow through scanner outputs.
-  - **Signal**: SharkAuth is referenced in docs but no URL, credentials, or test workspace defined.
-- [ ] 3.7 Implement SharkAuth execution using generic DOM tools first, with a typed SharkAuth tool only if DOM execution is too brittle.
-  - **Signal**: Blocked by 3.6 (no SharkAuth target).
-- [ ] 3.8 Add scanner fixtures and integration tests for generic pages, demo pages, and SharkAuth action affordances.
+- [x] 3.3 Implement stable anchor references that support highlighting, nearby context, and overlay placement.
+  - **Status**: DONE (uncommitted). `domScanner.ts` assigns `data-ct-element-id` attributes. Use these as anchors, not action targets, in the hackathon MVP.
+- [ ] 3.4 Connect page perception to the harness as `page.observe` / `dom.scan` with typed read-only inputs/outputs.
+  - **Signal**: `pageBridge.ts` exists and calls `scanDom()` + `sampleHostTheme()`. It still needs to pass `PageContextPacket` into `HarnessSessionInput`.
+- [ ] 3.5 Create page context fixtures for verify, understand, Jarvis assist/navigate, and respond scenes.
+  - **Signal**: User D needs repeatable page context without pre-rendered final UI trees or fake event timelines.
+- [ ] 3.6 Add context extraction tests for generic pages and controlled demo pages.
   - **Signal**: Blocked by test infrastructure.
+- [ ] 3.7 Quarantine browser action executor and SharkAuth automation as post-hackathon infrastructure.
+  - **Signal**: `actionExecutor.ts` may exist, but it must not be wired into the live MVP path.
 
 ## 4. User C - Overlay Renderer And AG-UI Client
 
@@ -144,8 +144,8 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Status**: PARTIAL. Static demo exists. Needs harness-driven version.
 - [x] 5.4 Verify the OAuth PKCE flow renders selected text extraction, quote, sequence diagram, stepper, with/without PKCE control, and comparison state from harness output.
   - **Status**: PARTIAL. Static demo exists. Needs harness-driven version.
-- [x] 5.5 Verify the SharkAuth flow uses scanner context, approval, execution, verification, scope/risk UI, and masked key handling.
-  - **Status**: PARTIAL. Static demo exists. Needs harness-driven version with real scanner.
+- [ ] 5.5 Replace the SharkAuth flow with a Jarvis-like page copilot flow using real page context, anchors, host adaptation, source-backed recommendations, and no mutation.
+  - **Signal**: Static SharkAuth demo exists but is no longer the hackathon target.
 - [x] 5.6 Verify the response flow uses sensitive context guard, private explanation, timeline, reply drafts, tone controls, and no auto-send.
   - **Status**: PARTIAL. Static demo exists. Needs harness-driven version.
 - [ ] 5.7 Own cross-lane integration checklist and call out blockers between harness, scanner, renderer, and demo scenes.
@@ -159,12 +159,12 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
 
 - [ ] 6.1 Integrate User A and User C work by streaming real harness events into the renderer.
   - **Signal**: Currently mocked via `setTimeout`. Need real event stream from harness runtime.
-- [ ] 6.2 Integrate User B scanner packets into User A classification and planning.
-  - **Signal**: Scanner doesn't exist yet. This is a HARD BLOCKER for end-to-end demos.
-- [ ] 6.3 Integrate User D scenario flows with User A harness, User B scanner/actions, and User C overlay rendering.
+- [ ] 6.2 Integrate User B page context packets into User A classification and planning.
+  - **Signal**: Page perception exists but is not yet wired to the harness session input.
+- [ ] 6.3 Integrate User D scenario flows with User A harness, User B page perception, and User C overlay rendering.
   - **Signal**: Blocked by 6.1 and 6.2.
-- [x] 6.4 Verify the SharkAuth approval flow blocks execution until approval and reports denied approval correctly.
-  - **Status**: PARTIAL. ApprovalGate UI exists but policy enforcement is not wired to real execution.
+- [ ] 6.4 Verify mutating requests are blocked or converted into deferred-action guidance in the hackathon MVP.
+  - **Signal**: Old approval/action UI exists, but MVP policy must prevent live page mutation.
 - [x] 6.5 Verify all four scenes show distinct generated interfaces rather than one generic panel.
   - **Status**: DONE. Four distinct demo scenes exist in `frontend/src/demos/`.
 - [ ] 6.6 Run Vitest for the harness runtime and fix failures.

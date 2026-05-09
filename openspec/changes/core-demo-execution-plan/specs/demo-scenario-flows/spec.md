@@ -22,16 +22,16 @@ The system SHALL demonstrate visual explanation over an OAuth PKCE PDF-like page
 - **WHEN** the user switches between with-PKCE and without-PKCE states
 - **THEN** the diagram or comparison state MUST update to show why intercepted authorization codes are dangerous without the verifier and safer with PKCE
 
-### Requirement: Act scenario flow
-The system SHALL demonstrate a SharkAuth API key workflow with approval, execution, and verification.
+### Requirement: Assist / Navigate scenario flow
+The system SHALL demonstrate a Jarvis-like page copilot flow over a dense current page without mutating the page.
 
-#### Scenario: Approval required before key creation
-- **WHEN** the user asks for a full-permissions API key
-- **THEN** Clickthrough MUST render an action surface with generated form, scope matrix, risk summary, and approval gate before execution
+#### Scenario: Page copilot appears
+- **WHEN** the user asks Clickthrough to help handle the current page
+- **THEN** Clickthrough MUST render a contextual copilot surface with page read, relevant entities, likely next moves, source-backed side research when useful, and prepared copyable output
 
-#### Scenario: Execution verifies result
-- **WHEN** the user approves key creation
-- **THEN** Clickthrough MUST execute against the real SharkAuth target or a safe SharkAuth test workspace, stream execution steps, and show a verification result plus masked copy field only after the result is verified
+#### Scenario: Mutating action is deferred
+- **WHEN** the user's request would require clicking, submitting, posting, creating credentials, or changing account state
+- **THEN** Clickthrough MUST show safe guidance or a deferred-action state rather than executing the mutation in the hackathon MVP
 
 ### Requirement: Respond scenario flow
 The system SHALL demonstrate a private response assistant over a chat-like page.
@@ -53,15 +53,15 @@ The system SHALL make runtime UI generation obvious across all four scenes.
 
 #### Scenario: Product is not a chatbot
 - **WHEN** judges watch the demo
-- **THEN** the primary visible experience MUST be generated dashboards, diagrams, forms, gates, logs, and assistants instead of a chat transcript or sidebar
+- **THEN** the primary visible experience MUST be generated dashboards, diagrams, page copilots, decision surfaces, and assistants instead of a chat transcript or sidebar
 
 ### Requirement: Protocol credibility
 The system SHALL make the chosen hackathon protocols legible without letting protocol branding dominate the product.
 
 #### Scenario: AG-UI shown through behavior
 - **WHEN** a scene is running
-- **THEN** progressive state, tool progress, approval requests, partial UI patches, and final results MUST be visible as an AG-UI-style event stream driving the overlay
+- **THEN** progressive state, tool progress, partial UI patches, deferred-action states, and final results MUST be visible as an AG-UI-style event stream driving the overlay
 
 #### Scenario: MCP framed as tool discovery
 - **WHEN** the demo explains external capabilities
-- **THEN** MCP Apps MUST be framed as a way for Clickthrough to discover or call tools such as search, profile lookup, browser/page tools, or SharkAuth actions
+- **THEN** MCP Apps MUST be framed as a way for Clickthrough to discover or call tools such as search, profile lookup, source fetch, or browser/page context tools

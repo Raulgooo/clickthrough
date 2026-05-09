@@ -2,7 +2,7 @@
 
 ## Mission
 
-Own the TypeScript Clickthrough harness runtime: state machine, planner boundary, tool policy, UI validation, approval enforcement, event stream, and verification.
+Own the TypeScript Clickthrough harness runtime: state machine, planner boundary, read-only tool policy, UI validation, event stream, and grounded result handling.
 
 ## Primary Files
 
@@ -17,15 +17,15 @@ Own the TypeScript Clickthrough harness runtime: state machine, planner boundary
 - Make generated UI output follow `DECLARATIVE_UI.md`: surface plan, data model, primitive tree, safety summary, and action bindings.
 - Implement provider-neutral `web.search` and `web.fetch` contracts with Exa behind them for MVP.
 - Normalize web evidence into source objects with title, URL, highlights, retrieved timestamp, optional image URL, optional favicon URL, and optional media array.
-- Add approval policy for high-risk actions.
+- Add a policy guard that blocks mutating browser/page actions in the hackathon MVP and reports them as deferred guidance.
 - Add UI validation against registered primitives.
 - Add Vitest tests once test tooling is installed, including web result normalization and missing-image fallback fixtures.
 
 ## Done When
 
 - A run emits typed events in order without a server.
-- High-risk action pauses for approval.
+- Mutating action requests are not executed in the MVP path.
 - Invalid UI is rejected before render.
 - The planner emits declarative UI intent before primitive rendering.
 - Web tool outputs are provider-neutral and can feed evidence primitives without Exa-specific fields.
-- Verification can return `success`, `failed`, `partial`, or `unknown`.
+- Grounded result handling can return `verified`, `unverified`, `partial`, or `unknown` style outcomes without overstating certainty.

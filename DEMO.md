@@ -16,7 +16,7 @@ Every scene should show the same pattern:
 2. They summon Clickthrough with a hotkey or voice prompt.
 3. Clickthrough reads the page context.
 4. It generates a beautiful, page-native overlay using GenUI primitives.
-5. The user understands, verifies, or acts without navigating away.
+5. The user understands, verifies, navigates, composes, or decides without navigating away.
 
 The emotional hook:
 
@@ -34,10 +34,10 @@ No slides. No pitch deck. The product explains itself through scenes.
 
 ## Cast
 
-- **Raul**: the person referenced in the Twitter/X claim and owner of SharkAuth.
+- **Raul**: the person referenced in the Twitter/X claim.
 - **Teammate 1**: scrolling Twitter/X, skeptical, triggers the first verification moment.
 - **Teammate 2**: reading a CS/OAuth PDF, confused, triggers the visual learning moment.
-- **Teammate 3**: inside SharkAuth, needs to perform a real dashboard workflow.
+- **Teammate 3**: on a dense web page, wants the browser to become a contextual copilot.
 - **Teammate 4**: comic relief in the final social-context scene.
 - **Clickthrough / CT**: the invisible browser intelligence. It appears only as transparent prompt surfaces and generated overlay UIs.
 
@@ -53,10 +53,10 @@ The answer is not text. The answer is a runtime UI:
 
 - dashboards
 - diagrams
-- forms
-- approval gates
+- contextual command surfaces
+- source-grounded workbenches
 - evidence panels
-- generated action surfaces
+- generated next-step surfaces
 
 ### 3. Adapt To The Host Page
 
@@ -79,7 +79,7 @@ Twitter/X gets an investigation overlay that feels native to a social feed.
 
 The PDF reader gets an annotation and diagram layer.
 
-SharkAuth gets an admin-console action panel that looks like it belongs in SharkAuth.
+A dense web page gets a Jarvis-like copilot surface that feels anchored to that page.
 
 The chat/social scene gets a lightweight private explanation and response assistant.
 
@@ -89,7 +89,7 @@ The full demo shows four kinds of intent:
 
 - **Verify**: "Is this true?"
 - **Understand**: "Explain this visually."
-- **Act**: "Do this workflow for me."
+- **Assist / Navigate**: "Help me handle this page."
 - **Respond**: "Help me understand what to say."
 
 Together, they make Clickthrough feel like a general browser agent, not a single-purpose tool.
@@ -254,76 +254,69 @@ Clickthrough turns a static PDF into an interactive lesson built from the paragr
 
 This shows the web becoming a learning surface.
 
-## Scene 3: Act Inside SharkAuth
+## Scene 3: Jarvis Mode For The Current Page
 
 ### Setup
 
-Teammate 3 is inside the SharkAuth dashboard.
+Teammate 3 is on a dense product, docs, dashboard, or application page.
 
-They need a full-permissions API key but do not know where the setting lives.
+They need to understand what matters, what can be done next, and how to move without clicking through menus or opening a separate assistant.
 
 They say:
 
-> I know this is somewhere in here, but I do not want to click through all this.
+> I know the answer is somewhere on this page, but I do not want to hunt through all this.
 
 They press the Clickthrough hotkey.
 
 Teammate 3 asks:
 
-> CT, I need to create a new full-permissions API key.
+> CT, help me handle this page.
 
 ### Clickthrough Behavior
 
-CT scans the current SharkAuth page and available DOM actions.
+CT reads the current page context: URL, title, selected or focused region, visible text, nearby links/buttons, and host style.
 
-It generates a SharkAuth-native action panel that looks like it belongs in the dashboard.
+It generates a page-native copilot surface that feels like the browser gained a contextual intelligence layer.
 
 Suggested generated sections:
 
-- **Goal**
-  - Create full-permissions API key
-- **Generated Form**
-  - key name
-  - environment
-  - expiration
-  - scopes
-  - full permissions already selected
-- **Risk Summary**
-  - "This key can access all project resources."
-  - "Store it securely. You will only see it once."
-- **Approval Gate**
-  - preview steps before execution
-  - approve button
-  - cancel button
-- **Execution Log**
-  - opening API key settings
-  - selecting full scopes
-  - creating key
-  - verifying key exists
-- **Result**
-  - masked key
-  - copy button
-  - "save to environment variable" suggestion
+- **Page Read**
+  - what this page is
+  - what appears actionable
+  - what the user likely needs next
+- **Suggested Moves**
+  - inspect the relevant section
+  - compare options
+  - draft a response or note
+  - open the right source or doc
+- **Context Workbench**
+  - extracted entities
+  - important controls or links
+  - source-backed side research if needed
+- **Prepared Output**
+  - copyable checklist, message, command, summary, or decision memo
+- **Trust Boundary**
+  - "I can prepare and guide. I will not click, submit, or change this page in the hackathon MVP."
 
 ### Visual Moment
 
-The panel should inherit SharkAuth styling:
+The surface should inherit the host styling:
 
 - same typography
 - same controls
 - same border radius
 - same density
-- same button style
+- same button/link rhythm
 
-It should feel like SharkAuth suddenly shipped the exact feature the user needed.
+It should feel like the page suddenly gained the exact copilot panel it was missing.
 
 ### Why This Wins
 
-A chatbot could give instructions.
+A chatbot could summarize the page in another box.
 
-Clickthrough generates the working form, asks approval, executes the underlying workflow, and verifies completion.
+Clickthrough reads the current page and generates the working interface for the user's next move directly where they are.
 
-This shows the web becoming an action surface.
+This shows the web becoming an intent surface without overpromising fragile automation.
 
 ## Scene 4: Human Context Mode
 
@@ -411,7 +404,7 @@ Each scene proves a different part of the product:
 | --- | --- | --- | --- |
 | Twitter/X | Verify | evidence dashboard | web investigation |
 | PDF | Understand | visual explainer | contextual teaching |
-| SharkAuth | Act | native action form | workflow abstraction |
+| Any dense page | Assist / Navigate | Jarvis-like copilot surface | contextual web copilot |
 | Chat | Respond | social-context assistant | human context |
 
 ## GenUI Primitive System
@@ -433,11 +426,12 @@ Examples:
 - `Timeline`
 - `Stepper`
 - `Toggle`
-- `Form`
-- `Field`
-- `ScopeMatrix`
-- `ApprovalGate`
-- `ExecutionLog`
+- `ContextSummary`
+- `Checklist`
+- `EntityList`
+- `SourceTrail`
+- `DecisionMatrix`
+- `DraftPanel`
 - `CopyField`
 - `ReplyDraft`
 - `ToneSlider`
@@ -470,11 +464,11 @@ OAuth PDF visual explanation.
 
 This proves CT can generate interactive understanding, not just search.
 
-### Scene 3, 45-60 seconds
+### Scene 3, 35-50 seconds
 
-SharkAuth action flow.
+Jarvis-like page copilot flow.
 
-This proves CT can operate software through generated UI.
+This proves CT can adapt to arbitrary web context and generate the missing interface without becoming a sidebar chatbot.
 
 ### Scene 4, 20-30 seconds
 
@@ -492,11 +486,11 @@ End caption:
 
 ## One-Sentence Pitch
 
-Clickthrough is a browser agent that generates runtime overlay interfaces for whatever the user is trying to verify, understand, or do on the current page.
+Clickthrough is a browser agent that generates runtime overlay interfaces for whatever the user is trying to verify, understand, navigate, compose, or decide on the current page.
 
 ## Short Description
 
-Clickthrough pushes past the chat bubble by turning the current webpage into an intent-native interface. It observes the page, understands the user's request, searches or reasons when needed, and renders generated UI components directly over the page: evidence dashboards, visual explainers, action forms, approval gates, and response assistants. The result is not an answer beside the page. It is the missing interface, generated at runtime.
+Clickthrough pushes past the chat bubble by turning the current webpage into an intent-native interface. It observes the page, understands the user's request, searches or reasons when needed, and renders generated UI components directly over the page: evidence dashboards, visual explainers, page copilots, decision surfaces, and response assistants. The result is not an answer beside the page. It is the missing interface, generated at runtime.
 
 ## What Must Be Obvious To Judges
 
@@ -505,8 +499,8 @@ Clickthrough pushes past the chat bubble by turning the current webpage into an 
 - The overlay stays inside the current page.
 - Each generated UI is different because each intent is different.
 - The generated components adapt visually to the host page.
-- The system handles verification, learning, action, and response.
-- The SharkAuth scene proves this can execute real workflows, not just display information.
+- The system handles verification, learning, navigation/assistance, and response.
+- The Jarvis scene proves Clickthrough is becoming a copilot for the web, not a scripted demo tied to one app.
 
 ## Risks To Avoid
 
@@ -515,6 +509,7 @@ Clickthrough pushes past the chat bubble by turning the current webpage into an 
 - Do not spend too long explaining architecture during the recording.
 - Do not make the social scene mean-spirited or creepy.
 - Do not overpromise universal automation verbally. Show the moonshot through the demo.
+- Do not claim the MVP clicks, submits, or mutates pages. Action execution is post-hackathon.
 - Do not call it a sidebar. It is an overlay interface layer.
 
 ## Best Final Framing
@@ -522,4 +517,3 @@ Clickthrough pushes past the chat bubble by turning the current webpage into an 
 > Chatbots explain the maze.
 >
 > Clickthrough generates the door.
-

@@ -1,6 +1,6 @@
 ## Context
 
-Clickthrough is currently a Vite React TypeScript frontend with a broad primitive library, four storyboard demos, host-style tokens, and mock harness hooks. The docs define a larger browser-native agent architecture: a page perception layer, model-agnostic harness, AG-UI-style stream, primitive validation, approval gates, action execution, and verification.
+Clickthrough is currently a Vite React TypeScript frontend with a broad primitive library, four storyboard demos, host-style tokens, and mock harness hooks. The docs define a larger browser-native agent architecture: a page perception layer, model-agnostic harness, AG-UI-style stream, primitive validation, approval boundaries, action execution, and verification. For the hackathon MVP, the live path is read-only: action execution and SharkAuth automation are deferred.
 
 The hackathon constraint is speed with working code: the team needs a functional 2-4 minute demo that proves runtime generated UI, not a generic chatbot. Four users with agents will work in parallel, so the core plan must minimize merge conflict and maximize visible demo coherence.
 
@@ -13,7 +13,7 @@ The hackathon constraint is speed with working code: the team needs a functional
 - **Runtime code exists but is UNCOMMITTED**: `frontend/src/harness/runtime/`, `frontend/src/browser/`, `frontend/src/renderer/stream/`. These compile cleanly but are not in git.
 - **Harness runtime is skeletal** — `LocalHarnessSession` implements async iterable events and state transitions up to `planning`, but stops there. No tool loop, UI generation, or approval wiring.
 - **DOM scanner exists but is unintegrated** — `scanDom()`, `sampleHostTheme()`, `buildPageContextPacket()` are ready but not wired to harness input.
-- **Browser action executor exists but is unintegrated** — `executeBrowserActionPlan()` ready but not wired to approval flow.
+- **Browser action executor exists but is unintegrated** — `executeBrowserActionPlan()` is post-hackathon infrastructure and must stay quarantined from the live MVP path.
 - **NO runtime validation** (Zod/JSON Schema) — `validateUi.ts` is a stub.
 - **NO test infrastructure** — Vitest and Playwright not installed.
 - Demos are manually composed React scenes, not generated primitive trees driven by a harness.
@@ -24,11 +24,11 @@ OpenSpec was initialized for this repo as part of this planning change. This des
 
 **Goals:**
 
-- Ship an end-to-end functional harness loop: observe page context, classify intent, plan, call tools, stream generated UI, request approval for risky action, execute approved DOM/API work, verify result.
+- Ship an end-to-end functional harness loop: observe page context, classify intent, plan, call read-only tools, stream generated UI, ground claims with evidence, and block/defer mutating actions.
 - Keep the visible product as generated overlays on the current page.
-- Make all four demo scenes distinct: verification dashboard, PDF explainer, SharkAuth action surface, and response assistant.
+- Make all four demo scenes distinct: verification dashboard, PDF explainer, Jarvis-like page copilot surface, and response assistant.
 - Let four users work independently through owned lanes chosen for fastest quality and lowest merge contention.
-- Use SharkAuth as a real target for the action scene while keeping the DOM scanner generic enough to work across arbitrary pages.
+- Use the third scene to prove Clickthrough can become a general copilot for the current web page without relying on SharkAuth automation.
 - Use Exa for MVP web search and content extraction while keeping web tools provider-agnostic.
 - Add a test strategy that catches harness, schema, scanner, approval, and browser-regression failures before recording.
 - Use OpenSpec artifacts as the shared source for what must be true before implementation starts.
@@ -37,6 +37,7 @@ OpenSpec was initialized for this repo as part of this planning change. This des
 
 - Production browser extension packaging across stores.
 - Perfect universal DOM automation for arbitrary sites.
+- Live browser mutation, credential creation, form submission, or SharkAuth API key automation during the hackathon MVP.
 - Full long-term memory, user accounts, billing, or SaaS admin surfaces.
 - A full MCP app store or broad CopilotKit integration.
 - A deterministic-only harness. Deterministic fixtures are acceptable for tests, local fallback, and predictable replay, but not as the primary product core.
@@ -49,9 +50,9 @@ The product core is the harness: intent input, page context packet, classificati
 
 Alternative considered: keep the existing handcrafted scene components or deterministic-only profiles. That is faster short term, but it fails the core judging question because the product would be a scripted animation rather than an agentic interface runtime.
 
-### Decision 2: Implement the DOM scanner/page bridge as a harness subsystem
+### Decision 2: Implement the page perception bridge as a harness subsystem
 
-The DOM scanner is part of the harness boundary, not a side demo utility. It should work first in the Vite-controlled pages and SharkAuth, then generalize by extracting visible text, interactive elements, accessible names, forms, tables, stable element refs, anchors, and host theme without relying on scene-specific selectors.
+The page perception bridge is part of the harness boundary, not a side demo utility. It should work first in the Vite-controlled pages, then generalize by extracting selected text, visible text, lightweight affordances, accessible names, headings, stable anchors, and host theme without relying on scene-specific selectors.
 
 Alternative considered: build a full Chrome extension first. That better matches the future product, but it increases packaging, permissions, reload, and content-script complexity before the harness loop is proven.
 
@@ -80,15 +81,15 @@ For the Vite demo, this can be an in-process TypeScript runtime. For an extensio
 
 Alternative considered: Python/FastAPI + Pydantic + pytest. Python is strong for tool orchestration and tests, and browser-use/Hermes-style browser harnesses can run in Python or JavaScript. But for this repo, adding Python creates cross-language schema drift and slows integration unless a specific Python-only tool becomes necessary. An HTTP server is also unnecessary for the first milestone because Claude Code-style agents expose a streaming library/process interface, not a mandatory app server.
 
-### Decision 5: Browser actions require approval even in demo mode
+### Decision 5: Mutating browser actions are deferred for the hackathon
 
-The SharkAuth action scene must pause at an approval gate before any DOM or API action. The resulting execution log and verification result must be produced after approval, not pre-rendered as a static state. The scanner should discover SharkAuth affordances rather than hard-code the whole workflow.
+The live hackathon demo must not depend on clicking through a real app, creating credentials, submitting forms, or mutating account state. If a request would require mutation, the harness should generate a safe copilot surface: explanation, checklist, prepared draft, source-backed recommendation, or deferred-action state.
 
-Alternative considered: auto-run the action for demo smoothness. That weakens the trust story and violates the product safety rules.
+Alternative considered: keep the SharkAuth action scene and gate it with approval. That is strong long-term product direction, but it creates fragile demo risk and makes User B's lane too large for the hackathon cut.
 
 ### Decision 6: Protocol strategy for winning the hackathon
 
-The handbook rewards working agent-rendered UI, sponsor protocols, and moving past chat. AG-UI should be the primary visible protocol because Clickthrough streams agent state, partial UI trees, approval requests, and results into runtime overlays. MCP Apps should be framed as the tool/app discovery layer for web search, SharkAuth actions, profile lookup, and browser tools. A2UI can be referenced as an influence if it improves schema framing, and CopilotKit should stay optional unless it accelerates hotkey/approval plumbing without creating chat.
+The handbook rewards working agent-rendered UI, sponsor protocols, and moving past chat. AG-UI should be the primary visible protocol because Clickthrough streams agent state, partial UI trees, tool progress, deferred-action states, and results into runtime overlays. MCP Apps should be framed as the tool/app discovery layer for web search, source fetch, profile lookup, and browser/page context tools. A2UI can be referenced as an influence if it improves schema framing, and CopilotKit should stay optional unless it accelerates hotkey/event plumbing without creating chat.
 
 Alternative considered: lead with CopilotKit or A2UI. CopilotKit risks making the product look like a copilot/chat surface, and A2UI is useful but less central to our streaming overlay proof.
 
@@ -97,7 +98,7 @@ Alternative considered: lead with CopilotKit or A2UI. CopilotKit risks making th
 The fastest high-quality split is:
 
 - User A: TypeScript harness runtime, schema validation, event stream, approval policy, verification.
-- User B: DOM scanner, page bridge, SharkAuth targeting, action executor.
+- User B: page perception, context bridge, anchors, host theme, demo context fixtures.
 - User C: overlay renderer, primitive validation, host adaptation, AG-UI client, replay controls.
 - User D: scenario flows, prompt/run profiles, evidence/tool adapters, demo script, final integration polish.
 
@@ -144,17 +145,16 @@ Alternative considered: ask the model to generate full styled React components. 
 - **Demo becomes static again** -> Mitigation: every scene must show event-driven skeleton/progress-to-final UI. **STATUS: At risk. Current demos use `setTimeout` toggles, not real event streams.**
 - **Full extension work consumes the schedule** -> Mitigation: harness plus extension-like page bridge first, extension packaging only if time remains. **STATUS: Extension is now explicitly stretch.**
 - **Model/API instability breaks recording** -> Mitigation: real harness includes deterministic fixtures and replay mode for tests and fallback, while the primary architecture remains functional. **STATUS: No model integration yet. Recommend heuristic/rules-based harness for demo reliability.**
-- **Action scene overpromises generic automation** -> Mitigation: use real SharkAuth where available, but keep scanner/action contracts generic and show verification evidence. **STATUS: SharkAuth target undefined. Need URL/test workspace.**
+- **Action scene overpromises generic automation** -> Mitigation: replace SharkAuth execution with a Jarvis-like read-only page copilot scene and keep action execution post-hackathon.
 - **Host adaptation is shallow** -> Mitigation: sample at least font, radius, surface, text, border, accent, and density from each controlled host scene. **STATUS: `HostTheme` type exists but no sampling logic.**
 - **Merge conflicts from broad frontend edits** -> Mitigation: ownership lanes avoid overlapping files; demos consume shared runtime rather than each lane editing every scene. **STATUS: Primitives and renderer are stable. New work should go in `harness/runtime/`, `scanner/`, and `demos/` (refactored).**
 - **Harness/browser contract drift** -> Mitigation: keep core contracts in TypeScript, derive any JSON Schema from them, and test example payloads end to end. **STATUS: No validation layer. Zod needed.**
 - **Premature transport work slows the core loop** -> Mitigation: implement async iterable/session-port first; add WebSocket/SSE only as a transport adapter after the harness loop works. **STATUS: No transport needed for Vite demo. In-process async iterable is sufficient.**
 - **Exa free tier or API key issues break verification** -> Mitigation: cache demo query results, cap searches, and keep a provider interface that can fall back to saved fixtures, SearXNG, Brave, or direct fetch.
-- **NEW RISK: Scanner is critical path** -> The DOM scanner blocks harness classification, planning, and all end-to-end demos. Without it, the harness has no page context. **Mitigation: Build minimal scanner first (selected text + URL + theme) before full capability map extraction.**
+- **NEW RISK: Page perception is critical path** -> The context bridge blocks harness classification, planning, anchoring, and all end-to-end demos. Without it, the harness has no page context. **Mitigation: Build minimal page packet first (selected text + URL + title + visible text + host theme + anchor) before richer affordance extraction.**
 - **NEW RISK: Zero tests** -> No automated validation means regressions are invisible. **Mitigation: Add Vitest immediately for contract and harness state tests. Playwright can follow.**
 
 ## Open Questions
 
-- Which local URL, auth state, and safe test workspace should the SharkAuth scene target?
 - Which model/API key will power the harness during the hackathon, and what fallback mode is allowed if the network or model fails?
 - Should OpenSpec repo-local skills be duplicated under `.agents/skills` as-is or wrapped with project-specific Clickthrough instructions?

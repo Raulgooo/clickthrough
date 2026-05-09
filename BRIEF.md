@@ -4,11 +4,13 @@
 
 Clickthrough is a browser-native intent agent.
 
-The user stays on the current page, invokes CT, and states intent. Clickthrough observes the page, understands the task, generates the exact overlay UI needed, asks for approval when action is risky, executes through browser tools, and verifies the result.
+The user stays on the current page, invokes CT, and states intent. Clickthrough observes the page, understands the task, and generates the exact overlay UI needed to verify, explain, navigate, compose, or decide without making the user leave the page.
 
 This is not a chatbot, sidebar, or separate assistant app. The generated interface is the product.
 
 Clickthrough should feel like a natural expansion of the cursor: summoned at the point of intent, anchored to the thing the user is looking at, spatially lightweight until more room is needed, and always easy to dismiss or refine without breaking flow.
+
+Hackathon scope update: the live MVP is read-only. It may search, fetch, explain, summarize, compare, prepare drafts, highlight page regions, and suggest safe next steps. It must not create credentials, submit forms, click through workflows, post content, delete data, buy things, or change account state. Browser action execution and SharkAuth automation remain post-hackathon architecture.
 
 ## Hackathon Goal
 
@@ -18,14 +20,14 @@ Win by showing working code that clearly proves:
 - the UI changes shape by intent and page context
 - the user never leaves the page
 - the product goes beyond chat
-- risky actions require approval
-- actions end with verification
+- web facts are grounded with sources and uncertainty
+- the browser feels like it gained a Jarvis-like intent layer
 
 The demo should land in these tracks:
 
 - Kill the Dashboard
-- The Copilot That Ships
 - No Designer, No Problem
+- The Copilot That Ships, framed as confirm/tweak/prepare inline rather than autonomous mutation
 
 ## Core Capabilities
 
@@ -37,9 +39,9 @@ The demo should land in these tracks:
    - User asks CT to explain dense content visually.
    - CT generates a visual explainer with selected quote, sequence diagram, step controls, toggles, and callouts.
 
-3. **Act**
-   - User asks CT to do a workflow inside SharkAuth.
-   - CT scans the page, generates an action surface, shows risk, asks approval, executes, and verifies.
+3. **Assist / Navigate**
+   - User asks CT to help with the current web page.
+   - CT reads page context and generates a Jarvis-like copilot surface: page summary, detected entities, recommended next steps, source-backed side research, and copyable/checkable outputs.
 
 4. **Respond**
    - User asks what a message means and what to say.
@@ -56,9 +58,8 @@ page context + user intent
   -> harness state machine
   -> typed tool calls
   -> generated primitive UI patches
-  -> approval gates
-  -> browser action execution
-  -> verification
+  -> read-only evidence/extraction/fetch tools
+  -> grounded verification and UI state
   -> streamed events back to overlay
 ```
 
@@ -86,6 +87,7 @@ No HTTP server is required for the first milestone. WebSocket/SSE can come later
 - AG-UI-style event stream for visible runtime generation
 - MCP Apps as tool/app discovery framing
 - Clickthrough primitive schema from `UI_PRIMITIVES.md`
+- Lightweight page perception bridge for URL/title/selection/visible text/anchors/host theme
 
 Optional only if useful:
 
@@ -93,6 +95,7 @@ Optional only if useful:
 - CopilotKit for hotkey/approval/event wiring, but never as visible chat UI
 - WebSocket/SSE transport after the in-process harness works
 - SearXNG, Brave Search, or Scrapling later if Exa cost, limits, or coverage become blockers
+- Browser action execution and SharkAuth automation after the read-only copilot demo lands
 
 ## Product Rules
 
@@ -101,8 +104,8 @@ Optional only if useful:
 - Do not create runtime scenario profiles.
 - Demo repeatability belongs in tests, fixtures, and reset controls, not fake harness output.
 - The harness must start from page context, prompt, available tools, and primitive manifest.
-- Approval is enforced by harness policy, not model suggestion.
-- No success claim without verification.
+- The MVP must stay read-only. Any mutating action plan is deferred or converted into user-facing guidance.
+- No factual claim without source grounding, uncertainty, or an explicit "not verified" state.
 - Generated UI must use validated primitives, not arbitrary HTML.
 - The model should emit declarative UI plus styling intent, not raw styling. Renderer-owned primitives, host tokens, and design skills turn that intent into accurate, useful, beautiful interfaces.
 - CT should feel pointer-native: overlays originate from selection, cursor, focused element, or active page region whenever possible.
@@ -140,19 +143,19 @@ Primary files:
 - `frontend/src/types/harness.ts`
 - `frontend/src/types/ui.ts`
 
-### User B: DOM Scanner And SharkAuth
+### User B: Page Perception And Context Bridge
 
-Owns page perception and browser actions.
+Owns the browser context layer that makes CT feel like a copilot for the current page.
 
 Work:
 
-- generic DOM scanner
 - selected text and visible text extraction
-- accessible names, forms, buttons, links, tables, dialogs
-- stable element references
+- URL, title, viewport, focused element, nearby text, and page-region anchors
+- lightweight affordance summaries for context only
 - host theme sampling
-- browser action tools: highlight, click, fill, select, wait, verify
-- real SharkAuth API key workflow through generic scanner/action contracts
+- anchor highlights and overlay placement metadata
+- demo page context fixtures for verify, understand, assist, and respond scenes
+- explicit deferral notes for action execution and SharkAuth automation
 
 Primary files:
 
@@ -171,7 +174,7 @@ Work:
 - surface validation errors safely
 - host style adaptation
 - skeleton/progress-to-final transitions
-- approval gate presentation
+- trust-boundary presentation for generated/grounded content
 - Playwright checks for overlay behavior
 
 Primary files:
@@ -206,12 +209,12 @@ Primary files:
 
 1. Make shared contracts compile.
 2. Make the harness emit real typed events.
-3. Make the scanner produce useful page context.
+3. Make the page perception bridge produce useful context.
 4. Add Exa-backed `web.search` and `web.fetch` tools behind generic interfaces.
 5. Make the renderer consume events and apply primitive patches.
 6. Wire one vertical slice end to end.
 7. Expand to all four demo intents.
-8. Add approval and verification to SharkAuth.
+8. Add the Jarvis-like assist/navigate scene in place of SharkAuth execution.
 9. Run build and browser checks.
 10. Record a 2-4 minute demo with working code only.
 
@@ -258,8 +261,8 @@ Renderer plan:
 
 Testing plan:
 
-- Vitest owns harness, provider normalization, schema validation, approval policy, and web evidence contract fixtures.
-- Playwright owns visible overlay behavior, event streaming, approval gates, responsive fit, and source image/fallback rendering.
+- Vitest owns harness, provider normalization, schema validation, read-only tool policy, and web evidence contract fixtures.
+- Playwright owns visible overlay behavior, event streaming, host anchoring, responsive fit, and source image/fallback rendering.
 
 ## Key References
 

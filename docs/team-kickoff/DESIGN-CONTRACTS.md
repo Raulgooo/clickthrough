@@ -20,10 +20,10 @@ The visible product is generated UI, not a chat transcript, sidebar, or scripted
 
 | User | Owns | Primary Write Scope | Must Not Own |
 |---|---|---|---|
-| A | Harness runtime, classification, planning, tool policy, generated UI declarations, approval, verification | `frontend/src/harness/runtime/`, `frontend/src/types/harness.ts`, `frontend/src/types/ui.ts` | Renderer styling, DOM scanner internals, demo scene composition |
-| B | DOM scanner, page bridge, browser action executor, SharkAuth discovery | `frontend/src/browser/` | Harness planning, primitive rendering, demo final UI |
-| C | Overlay renderer, event stream consumer, primitive validation display, host style adaptation | `frontend/src/renderer/`, `frontend/src/primitives/`, `frontend/src/harness/useHarness.ts` | Tool planning, scanner heuristics, scenario acceptance |
-| D | Scenario acceptance, integration checks, demo coherence, recording script | `frontend/src/demos/`, `frontend/src/test-fixtures/`, `docs/team-kickoff/`, `DEMO.md` | Core harness logic, generic scanner logic, renderer internals |
+| A | Harness runtime, classification, planning, read-only tool policy, generated UI declarations, grounded results | `frontend/src/harness/runtime/`, `frontend/src/types/harness.ts`, `frontend/src/types/ui.ts` | Renderer styling, page perception internals, demo scene composition |
+| B | Page perception, context packets, anchor metadata, host theme, demo context fixtures | `frontend/src/browser/` | Harness planning, primitive rendering, demo final UI, mutating browser actions |
+| C | Overlay renderer, event stream consumer, primitive validation display, host style adaptation | `frontend/src/renderer/`, `frontend/src/primitives/`, `frontend/src/harness/useHarness.ts` | Tool planning, page perception heuristics, scenario acceptance |
+| D | Scenario acceptance, integration checks, demo coherence, recording script | `frontend/src/demos/`, `frontend/src/test-fixtures/`, `docs/team-kickoff/`, `DEMO.md` | Core harness logic, generic page perception logic, renderer internals |
 
 Cross-lane edits are allowed only when the owner agrees or the contract is updated.
 
@@ -31,7 +31,7 @@ Cross-lane edits are allowed only when the owner agrees or the contract is updat
 
 1. Shared contracts compile.
 2. User A emits valid harness events and generated UI declarations.
-3. User B produces real `PageContextPacket` values.
+3. User B produces real `PageContextPacket` values with anchors and host theme.
 4. User C renders streamed `ClickthroughNode` patches.
 5. User D proves each scene through acceptance checks, not scripted profiles.
 6. Extension/content-script transport adapts to the same contracts after the in-process loop works.
@@ -42,8 +42,8 @@ Cross-lane edits are allowed only when the owner agrees or the contract is updat
 - No raw DOM dumps go to the harness.
 - No arbitrary HTML, CSS, scripts, JSX, or unregistered components come from the model.
 - All web facts retain source URLs.
-- All risky actions require approval before execution.
-- No success claim without verification evidence.
+- Hackathon MVP is read-only: no clicking, filling, submitting, posting, credential creation, permission changes, or other page mutations.
+- No factual claim without source grounding, uncertainty, or explicit "not verified" state.
 - Optional fields must be treated as optional by all consumers.
 - Providers are hidden behind Clickthrough contracts.
 
@@ -69,12 +69,12 @@ Rules:
 
 - `prompt` is the user's actual request.
 - `selectedText` wins over cursor position as intent anchor.
-- `anchorElementId` must refer to a stable DOM id from the scanner when present.
+- `anchorElementId` must refer to a stable page perception id when present.
 - `timestamp` is ISO-8601.
 
 ## Contract 2: Page Context Packet
 
-Producer: User B scanner/page bridge.
+Producer: User B page perception bridge.
 
 Consumer: User A classifier/planner, User C overlay anchoring.
 
@@ -135,11 +135,11 @@ Rules:
 - `nearbyElements` prioritizes selected/focused region and visible interactive elements.
 - Every `elementIds[]` entry must resolve to a current DOM element or be omitted.
 - `confidence` is `0..1`; low confidence must not block rendering, only execution.
-- B owns the scanner. A must not duplicate DOM heuristics.
+- B owns page perception. A must not duplicate DOM heuristics.
 
 ## Contract 3: Host Theme
 
-Producer: User B scanner/page bridge.
+Producer: User B page perception bridge.
 
 Consumer: User C renderer and User A style planner.
 
@@ -198,7 +198,7 @@ type IntentClassification = {
 Rules:
 
 - `unknown` must produce clarification UI, not a guessed workflow.
-- `act` with API keys, credentials, permissions, sends, deletes, billing, or account changes is high risk.
+- `act` with API keys, credentials, permissions, sends, deletes, billing, or account changes is deferred in the hackathon MVP.
 - `verify` must expose uncertainty.
 - `respond` must stay private and must not auto-send.
 
@@ -331,7 +331,7 @@ Rules:
 
 - `type` must match a registered primitive name.
 - `props` must not include `dangerouslySetInnerHTML`, `style`, inline event handlers, scripts, or raw HTML.
-- Dangerous actions must include an `ApprovalGate`.
+- Deferred or dangerous actions must render as guidance/trust-boundary UI, not executable controls, in the hackathon MVP.
 - Unknown primitives render as recoverable validation errors, not blank failure.
 - C owns visual implementation of primitives. A owns generated tree composition.
 
@@ -357,7 +357,7 @@ Rules:
 - Every run starts with `state.changed: receiving_intent`.
 - Long-running work emits skeleton/progress UI before final content.
 - Tool calls emit `tool.started` and `tool.finished`.
-- High-risk action emits `approval.requested` before execution.
+- High-risk action execution is post-hackathon. The hackathon MVP emits guidance or deferred-action UI instead of `approval.requested`.
 - Every run ends with `result`.
 
 Minimum state path for verify:
@@ -366,7 +366,7 @@ Minimum state path for verify:
 receiving_intent -> observing_page -> classifying_intent -> planning -> generating_ui -> running_tools -> generating_ui -> verifying -> completed
 ```
 
-Minimum state path for high-risk act:
+Post-hackathon minimum state path for high-risk act:
 
 ```txt
 receiving_intent -> observing_page -> classifying_intent -> planning -> generating_ui -> awaiting_approval -> executing_actions -> verifying -> completed
@@ -425,7 +425,7 @@ type ToolResult<T = unknown> = {
 Rules:
 
 - Read-only tools may run without approval.
-- Mutating tools require approval unless explicitly low risk.
+- Mutating tools are unavailable in the hackathon MVP. Post-MVP mutating tools require approval unless explicitly low risk.
 - `summaryForModel` is compact and safe to send back to a model.
 - Raw large outputs stay outside model context.
 
@@ -464,11 +464,11 @@ Rules:
 - Every image must remain tied to `url` or `sourceUrl`.
 - No evidence UI may imply certainty if source quality is weak or missing.
 
-## Contract 13: Approval
+## Contract 13: Deferred Actions And Approval Boundary
 
 Producer: User A harness policy.
 
-Consumer: User C approval UI, User B action executor.
+Consumer: User C trust-boundary UI, User B page perception bridge.
 
 ```ts
 type ApprovalRequest = {
@@ -494,15 +494,18 @@ type ApprovalDecision =
 Rules:
 
 - Approval is enforced outside the model.
+- Hackathon MVP must convert mutating requests into guidance, drafts, checklists, source-backed recommendations, or "deferred action" UI.
 - Denial ends the action flow with `approval_denied`.
 - Redirected approval must replan before execution.
-- B must never execute mutating steps without an approval decision from A.
+- B must not execute mutating steps in the hackathon MVP.
 
 ## Contract 14: Browser Action Plan
 
 Producer: User A planner.
 
 Consumer: User B action executor.
+
+Status: post-hackathon / quarantined. Keep the shape documented so future action execution can reuse it, but do not wire it into the live MVP path.
 
 ```ts
 type BrowserActionPlan = {
@@ -528,7 +531,7 @@ Rules:
 - B returns evidence for every executed step.
 - A verifies before claiming success.
 
-## Contract 15: Verification Result
+## Contract 15: Grounded Result
 
 Producer: User A harness, with evidence from B/tools.
 
@@ -547,11 +550,11 @@ Rules:
 
 - `unknown` and `partial` are valid outcomes.
 - UI must show uncertainty instead of hiding it.
-- Action scenes cannot emit `success` without visible DOM, fixture, or API evidence.
+- Read-only scenes cannot imply certainty without source, page, fixture, or model uncertainty evidence. Post-MVP action scenes cannot emit `success` without visible DOM, fixture, or API evidence.
 
 ## Contract 16: Extension Transport
 
-Owner: User A for shared types, User C for content overlay mount, User B for scanner compatibility.
+Owner: User A for shared types, User C for content overlay mount, User B for page perception compatibility.
 
 Extension transport must not create a second harness.
 
@@ -594,12 +597,13 @@ User A must provide:
 - `validateGeneratedUi(ui) -> UiValidationResult`
 - `createLocalHarnessSession(...) -> HarnessSession`
 - provider-neutral `web.search` / `web.fetch` tool definitions
+- policy guard that blocks mutating actions in the MVP path
 
 User A must not:
 
 - change renderer component visuals
 - create scenario-specific final UI trees in demos
-- execute browser actions directly without User B executor
+- execute mutating browser actions in the hackathon MVP
 - depend on Exa-specific response fields outside web adapter
 
 ## User B Contract
@@ -607,23 +611,24 @@ User A must not:
 User B may change:
 
 - `frontend/src/browser/**`
-- browser scanner/action tests
-- SharkAuth fixture pages if coordinated with User D
+- page perception tests
+- demo context fixtures if coordinated with User D
 
 User B must provide:
 
 - `buildPageContextPacket() -> PageContextPacket`
 - `scanDom() -> DomScanResult`
 - `sampleHostTheme() -> HostTheme`
-- `executeBrowserActionPlan(steps) -> BrowserActionResult`
-- stable `data-ct-element-id` references
+- stable anchor references for selected/focused/nearby page regions
+- lightweight affordance summaries for context
 
 User B must not:
 
 - classify user intent
 - decide approval policy
 - render final generated UI
-- hard-code SharkAuth UI output into scanner logic
+- wire click/fill/submit/action execution into the hackathon MVP
+- hard-code final scene UI output into page perception logic
 
 ## User C Contract
 
@@ -686,7 +691,7 @@ Before a lane merges:
 Before final integration:
 
 - A emits a valid verify event stream from a `PageContextPacket`.
-- B produces a real page context from a controlled demo page.
+- B produces a real page context and anchor metadata from a controlled demo page.
 - C renders A's stream without custom scene code.
 - D confirms each scene has an acceptance check.
 
@@ -695,7 +700,7 @@ Before final integration:
 - If two users need the same file, define a narrow patch window.
 - If a type must change, User A updates the type and this contract first.
 - If a primitive prop must change, User C updates primitive type/rendering and this contract first.
-- If scanner shape must change, User B updates `PageContextPacket` compatibility and this contract first.
+- If page perception shape must change, User B updates `PageContextPacket` compatibility and this contract first.
 - If demo acceptance requires new data, User D requests the data through this contract, not ad hoc props.
 
 ## Current Highest-Risk Seams
@@ -704,5 +709,4 @@ Before final integration:
 2. `validateUi.ts` must use the same primitive registry as `PrimitiveRenderer`.
 3. `applyHarnessEvent()` currently handles root replacement better than nested patches. A should prefer root replacement until C confirms nested patch support.
 4. Extension infrastructure must stay a transport adapter, not a second product path.
-5. SharkAuth target details are still external. B/D must define safe workspace data before live execution.
-
+5. Browser action execution is deferred. Do not let old SharkAuth automation references become hackathon blockers.

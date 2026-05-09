@@ -3,9 +3,9 @@
 ### Requirement: Harness unit tests
 The system SHALL include unit tests for harness state transitions, intent classification, approval policy, UI validation, and verification decisions.
 
-#### Scenario: Approval policy tested
-- **WHEN** tests evaluate a high-risk action such as API key creation
-- **THEN** the policy MUST require approval before execution
+#### Scenario: Read-only policy tested
+- **WHEN** tests evaluate a high-risk mutation such as API key creation, posting, submitting, deleting, or changing permissions
+- **THEN** the policy MUST block execution in the hackathon MVP and return a deferred-action result
 
 #### Scenario: Unknown primitive tested
 - **WHEN** tests validate a generated UI tree with an unknown primitive
@@ -35,7 +35,7 @@ The system SHALL include contract tests for event payloads, generated UI payload
 - **THEN** tests MUST confirm safety metadata, approval gates, viewport constraints, and primitive validation override style guidance when they conflict
 
 ### Requirement: Browser integration tests
-The system SHALL include browser-level tests for the four core scenes and SharkAuth action flow where feasible.
+The system SHALL include browser-level tests for the four core scenes and the Jarvis-like page copilot flow where feasible.
 
 #### Scenario: Verification scene streams UI
 - **WHEN** the verification test invokes Clickthrough on the tweet claim
@@ -46,9 +46,9 @@ The system SHALL include browser-level tests for the four core scenes and SharkA
 - **THEN** the browser test MUST observe at least one source image or favicon embedded in the generated evidence UI
 - **AND** the test MUST pass when image metadata is absent by falling back to text-only source evidence
 
-#### Scenario: SharkAuth approval blocks execution
-- **WHEN** the SharkAuth action test reaches the approval gate
-- **THEN** no browser action or API key creation MUST occur until the test approves the request
+#### Scenario: Mutating action remains blocked
+- **WHEN** the page copilot flow receives a request that would require page mutation
+- **THEN** no browser click, form submit, post, credential creation, or permission change MUST occur in the hackathon MVP path
 
 ### Requirement: Recommended test tooling
 The system SHALL use Vitest for the TypeScript harness/runtime and Playwright for browser integration.
@@ -59,4 +59,4 @@ The system SHALL use Vitest for the TypeScript harness/runtime and Playwright fo
 
 #### Scenario: Browser tests run
 - **WHEN** Playwright tests are run against the local frontend and harness runtime
-- **THEN** the tests MUST verify visible overlay behavior, event streaming, approval gating, and final verification states
+- **THEN** the tests MUST verify visible overlay behavior, event streaming, read-only action blocking, and final grounded states

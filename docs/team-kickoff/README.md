@@ -7,17 +7,17 @@ Ground rules:
 - Build the functional harness loop first.
 - Keep all surfaces driven by typed events and validated primitive trees.
 - Do not turn the product into chat.
-- Approval gates are harness policy, not model suggestion.
-- No success claim without verification evidence.
+- Hackathon MVP is read-only: no clicking, submitting, posting, credential creation, permission changes, or other page mutations.
+- No factual claim without source grounding, uncertainty, or explicit "not verified" state.
 - Web evidence must be grounded with source URLs and may include representative images, favicons, or page image links when available.
 
 Recommended first integration order:
 
 1. Shared contracts land.
 2. Harness emits real events.
-3. Scanner feeds real page context.
+3. Page perception feeds real context and anchors.
 4. Renderer consumes event stream.
-5. Scenario flows wire the pieces together.
+5. Jarvis-style scenario flows wire the pieces together.
 6. Acceptance checks and recording script lock the demo.
 
 No runtime scenario profiles:

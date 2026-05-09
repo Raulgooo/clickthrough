@@ -11,16 +11,16 @@ The system SHALL create compact page context packets from the active page or con
 - **WHEN** page context is prepared for the harness
 - **THEN** the page bridge MUST send summarized relevant elements rather than raw full HTML
 
-### Requirement: Capability map extraction
-The system SHALL extract visible interactive page affordances into a capability map.
+### Requirement: Lightweight affordance extraction
+The system SHALL extract visible page affordances into a read-only context map for planning, anchoring, and explanation.
 
 #### Scenario: Dashboard actions detected
 - **WHEN** the active scene contains buttons, forms, tables, menus, or links
-- **THEN** the page bridge MUST report capability entries with stable element ids, labels, kinds, bounding boxes where available, and confidence
+- **THEN** the page bridge MUST report context entries with stable ids, labels, kinds, bounding boxes where available, and confidence
 
-#### Scenario: Action target unavailable
-- **WHEN** a requested action cannot be mapped to a stable element id
-- **THEN** the page bridge MUST report the missing target so the harness can clarify or fall back safely
+#### Scenario: Action target requested
+- **WHEN** a requested action would require mutating the page
+- **THEN** the page bridge MUST provide context only and the harness MUST defer execution in the hackathon MVP
 
 #### Scenario: Generic page scanned
 - **WHEN** the page bridge scans a page that is not one of the four controlled demo scenes
@@ -44,17 +44,17 @@ The system SHALL preserve references to selected or target page regions for high
 - **WHEN** the verify scene targets a tweet claim
 - **THEN** the bridge MUST expose an anchor reference that the overlay can use for `AnchorHighlight` and placement
 
-#### Scenario: Page changes after action
-- **WHEN** an approved action changes visible page state
-- **THEN** the bridge MUST support re-scanning so verification can inspect the updated page
+#### Scenario: Page changes after user navigation
+- **WHEN** the visible page state changes because the user navigates or interacts manually
+- **THEN** the bridge MUST support re-scanning so the harness can update context
 
-### Requirement: SharkAuth real target support
-The system SHALL support SharkAuth as a real action target through the same generic scanner and action contracts used for other pages.
+### Requirement: Hackathon read-only boundary
+The system SHALL keep page perception separate from page mutation during the hackathon MVP.
 
-#### Scenario: SharkAuth API key affordances detected
-- **WHEN** the active page is SharkAuth and the user asks to create a full-permissions API key
-- **THEN** the scanner MUST discover relevant navigation, form, scope, approval, and submit affordances without hard-coding the entire workflow into the UI scene
+#### Scenario: Mutating browser tools are present in code
+- **WHEN** browser action executor code exists in the repository
+- **THEN** it MUST remain quarantined from the live MVP path unless the plan is explicitly revised
 
-#### Scenario: SharkAuth action executes after approval
-- **WHEN** the user approves a SharkAuth API key action plan
-- **THEN** the action executor MUST use stable element references or a typed SharkAuth tool to execute the workflow and return evidence for verification
+#### Scenario: General page copilot context
+- **WHEN** the user invokes Clickthrough on an arbitrary dense page
+- **THEN** the bridge MUST return enough read-only context for Clickthrough to summarize the page, identify likely next moves, anchor the overlay, and prepare user-facing output

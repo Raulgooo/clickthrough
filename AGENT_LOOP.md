@@ -1,5 +1,9 @@
 # Clickthrough Agent Loop
 
+## Hackathon Scope Update
+
+The live loop is read-only: observe page, classify intent, produce a style brief, run read-only tools, generate validated UI, ground sources/uncertainty, and stream the result. Mutating browser actions are deferred and should become guidance, drafts, checklists, or a post-MVP action boundary rather than executable steps.
+
 ## Goal
 
 Clickthrough should be its own browser-native intent agent. It must not depend on one model, one tool provider, or one app integration.
