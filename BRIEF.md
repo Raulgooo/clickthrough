@@ -8,6 +8,8 @@ The user stays on the current page, invokes CT, and states intent. Clickthrough 
 
 This is not a chatbot, sidebar, or separate assistant app. The generated interface is the product.
 
+Clickthrough should feel like a natural expansion of the cursor: summoned at the point of intent, anchored to the thing the user is looking at, spatially lightweight until more room is needed, and always easy to dismiss or refine without breaking flow.
+
 ## Hackathon Goal
 
 Win by showing working code that clearly proves:
@@ -102,6 +104,16 @@ Optional only if useful:
 - Approval is enforced by harness policy, not model suggestion.
 - No success claim without verification.
 - Generated UI must use validated primitives, not arbitrary HTML.
+- The model should emit declarative UI plus styling intent, not raw styling. Renderer-owned primitives, host tokens, and design skills turn that intent into accurate, useful, beautiful interfaces.
+- CT should feel pointer-native: overlays originate from selection, cursor, focused element, or active page region whenever possible.
+
+Declarative UI fit:
+
+```txt
+fast style brief -> surface plan -> data model -> primitive tree -> validated renderer
+```
+
+`DECLARATIVE_UI.md` is the source of truth for this contract. A fast style planner may create a compact primordial style brief from the user prompt, intent, page context, and host theme. The principal CT agent then uses that brief to declare interface purpose, anchor, layout, style intent, interaction constraints, data, and primitives. The renderer owns real components, responsive behavior, host adaptation, and safety.
 
 ## Team Split
 
@@ -253,6 +265,7 @@ Testing plan:
 
 - `DEMO.md`: storyboard source of truth
 - `UI_PRIMITIVES.md`: generated UI schema and primitive rules
+- `DECLARATIVE_UI.md`: surface plan, style intent, and cursor-native UI contract
 - `AGENT_LOOP.md`: agent loop architecture
 - `HARNESS.md`: harness policies and tool execution model
 - `STACK.md`: stack decisions

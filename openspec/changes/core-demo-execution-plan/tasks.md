@@ -60,6 +60,10 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Status**: NOT DONE. Only mock timeout-based events exist in `frontend/src/harness/mockEvents.ts`.
 - [x] 1.6 Keep repo-local OpenSpec skills in `.codex/skills` and mirror them into `.agents/skills` for team discoverability.
   - **Status**: Done. Both directories present with openspec and impeccable skills.
+- [ ] 1.7 Add declarative UI fixtures for surface plan, data model, primitive tree, action bindings, safety summary, and rejected raw HTML/CSS cases.
+  - **Status**: NOT DONE. `DECLARATIVE_UI.md` defines the contract; tests still need fixtures.
+- [ ] 1.8 Add primordial style brief fixtures for verify, understand, act, and respond intents.
+  - **Status**: NOT DONE. Style brief is optional but should be covered before model-backed UI generation.
 
 ## 2. User A - Functional Harness Runtime
 
@@ -87,6 +91,10 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Signal**: Needed to preserve free-tier credits and make recording reliable.
 - [ ] 2.12 Add Vitest unit tests for state transitions, classifier outputs, approval policy, UI validation, web tool normalization including media fields, and verification decisions.
   - **Signal**: NO test infrastructure. `vitest` not in package.json.
+- [ ] 2.13 Teach the planner to emit the declarative UI contract: surface plan, data model, primitive tree, safety summary, and action bindings.
+  - **Signal**: `GeneratedUI.surface` is currently optional for migration. Make it required after static demos are converted.
+- [ ] 2.14 Add a fast style-planner step that produces a compact non-authoritative `PrimordialStyleBrief` for the principal CT agent.
+  - **Signal**: This should run before model-backed UI generation and be cached per page/intent where useful.
 
 ## 3. User B - DOM Scanner, Browser Tools, And SharkAuth
 
@@ -123,6 +131,8 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Status**: DONE. ApprovalGate and CTMark primitives exist with distinct styling.
 - [ ] 4.7 Add Playwright browser checks for overlay rendering, event streaming, approval gating, source image/fallback rendering, and responsive fit.
   - **Signal**: NO Playwright config exists. Not in package.json.
+- [ ] 4.8 Use `surface.anchor` and `surface.style` in renderer positioning and host adaptation so overlays expand from selection, focus, cursor, or viewport fallback.
+  - **Signal**: Cursor-native behavior is now a product requirement, but renderer positioning still needs to consume the contract.
 
 ## 5. User D - Integration, Acceptance, And Winning Demo
 

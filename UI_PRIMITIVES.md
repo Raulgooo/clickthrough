@@ -15,6 +15,12 @@ The design goal:
 
 > Same intelligence, different generated UI, visually adapted to the current page.
 
+Interaction feel:
+
+> Clickthrough should feel like a natural expansion of the cursor.
+
+The overlay should appear where user intent is already focused: selected text, cursor position, focused control, hovered element, or the visible region that triggered the request. It should grow from a small invocation surface into the exact interface needed, then collapse back out of the way.
+
 ## Core Rendering Model
 
 The agent emits a UI tree:
@@ -36,6 +42,8 @@ The renderer is responsible for:
 5. Routing approved actions to the browser/action layer.
 
 The agent decides what interface should exist. The renderer decides how to make it safe, native-feeling, and consistent.
+
+The agent may emit declarative styling intent such as density, emphasis, tone, preferred visualization, and host-fit strategy. It must not emit arbitrary CSS or one-off component code. Styling skills and prompts should guide the model toward better composition, while the renderer owns final layout, tokens, accessibility, and safety boundaries.
 
 ## Host Page Adaptation
 
@@ -1141,4 +1149,3 @@ End with a small design token set that can be adapted per host page:
 - density
 - motion timing
 ```
-

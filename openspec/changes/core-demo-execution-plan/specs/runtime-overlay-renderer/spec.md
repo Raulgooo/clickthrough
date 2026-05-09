@@ -43,3 +43,35 @@ The system SHALL apply host-derived style variables to generated overlays while 
 #### Scenario: CT mark remains visible
 - **WHEN** any generated overlay is shown
 - **THEN** the UI MUST include a Clickthrough mark or control affordance identifying the generated surface
+
+### Requirement: Declarative styling intent
+The system SHALL accept model-provided styling intent only as validated primitive props or renderer-owned style tokens.
+
+#### Scenario: Fast style brief guides principal generation
+- **WHEN** the harness has a user prompt, intent classification, page context, and host theme
+- **THEN** it MAY run a fast style planner to produce a compact style brief before principal UI generation
+- **AND** the principal agent MUST treat the brief as guidance that can be overridden by evidence, safety, approval, viewport, or renderer constraints
+
+#### Scenario: Surface plan precedes primitive rendering
+- **WHEN** the harness emits generated UI
+- **THEN** the payload SHOULD include a declarative surface plan describing purpose, anchor, layout, style intent, and interaction constraints
+- **AND** the renderer MUST treat the primitive tree as the implementation of that plan rather than an arbitrary component dump
+
+#### Scenario: Styling intent guides renderer
+- **WHEN** the harness emits generated UI with density, tone, emphasis, host-fit, or visualization preference
+- **THEN** the renderer MUST translate that intent through Clickthrough primitives and host style variables rather than raw CSS
+
+#### Scenario: Arbitrary styling rejected
+- **WHEN** a generated UI payload attempts to include arbitrary CSS, script, or unregistered component code
+- **THEN** validation MUST reject that payload before render
+
+### Requirement: Cursor-native overlay behavior
+The system SHALL make generated UI feel like a natural expansion of the user's current pointer, selection, or focus.
+
+#### Scenario: Anchored point of intent
+- **WHEN** the page context includes selected text, a focused element, hovered element, cursor position, or anchor element
+- **THEN** the initial overlay MUST prefer anchoring to that point of intent before falling back to a generic panel position
+
+#### Scenario: Progressive expansion
+- **WHEN** a task grows from a small prompt into a larger generated interface
+- **THEN** the overlay SHOULD visually expand from the invocation point into the selected overlay mode without disorienting the user or losing page position

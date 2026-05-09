@@ -26,6 +26,14 @@ The system SHALL include contract tests for event payloads, generated UI payload
 - **WHEN** a `web.search` or `web.fetch` fixture includes highlights, favicon URL, representative image URL, and page image links
 - **THEN** contract tests MUST confirm the normalized web result can be transformed into evidence primitives without Exa-specific fields leaking into renderer logic
 
+#### Scenario: Declarative UI declaration consumed by renderer
+- **WHEN** a generated UI fixture includes a surface plan, data model, primitive tree, action bindings, and safety summary
+- **THEN** contract tests MUST confirm the renderer can consume the declaration without raw HTML, raw CSS, unsupported primitives, or missing approval metadata
+
+#### Scenario: Style brief remains non-authoritative
+- **WHEN** a generated UI fixture includes a primordial style brief
+- **THEN** tests MUST confirm safety metadata, approval gates, viewport constraints, and primitive validation override style guidance when they conflict
+
 ### Requirement: Browser integration tests
 The system SHALL include browser-level tests for the four core scenes and SharkAuth action flow where feasible.
 

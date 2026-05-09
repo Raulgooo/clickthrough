@@ -118,6 +118,26 @@ Exa is an implementation detail behind those tools. Use `contents.highlights` fo
 
 Alternative considered: self-host SearXNG for zero API cost. That is more OSS-aligned, but it adds setup and reliability risk. Scrapling is useful for fetch/extraction/crawling, but it is not a search index and should not be forked for MVP.
 
+### Decision 9: Treat declarative UI and styling intent as separate model outputs
+
+The model should produce structured UI intent, not raw JSX, raw HTML, or arbitrary CSS. The primary output remains a validated primitive tree. Alongside that tree, the harness may provide styling intent such as density, emphasis, tone, host-fit strategy, visual hierarchy goal, and preferred visualization pattern.
+
+This improves model output quality because the model chooses the interface concept while the renderer handles exact implementation, accessibility, host-page adaptation, responsive fit, and trust boundaries. Styling skills and prompts are valuable as taste and composition guidance, but they must be compiled into safe primitive props and renderer-owned tokens.
+
+The concrete generated UI pipeline is:
+
+```txt
+fast style brief -> surface plan -> data model -> primitive tree -> safety/action bindings
+```
+
+The optional fast style brief is produced by a cheap model or deterministic style planner. It converts the user's prompt, intent, page context, and host theme into a compact design direction: interface archetype, anchor strategy, layout bias, visual tone, density, host adaptation, motion hint, priority order, and anti-patterns to avoid.
+
+The principal CT agent uses that brief as guidance, not law. The surface plan explains purpose, anchor, layout pattern, style intent, and interaction constraints. The data model carries source-grounded facts, risks, fields, steps, and results. The primitive tree renders the current view. Safety/action bindings connect UI controls to harness-owned execution.
+
+The design direction is cursor-native: Clickthrough should feel like a natural expansion of the cursor. Generated UI should originate from the user's current point of intent: selected text, focused element, hovered control, caret, cursor position, or visible page region. Small questions should produce small anchored UI; complex tasks may expand into panels or fullscreen workbenches only when the task demands it.
+
+Alternative considered: ask the model to generate full styled React components. That may look impressive in isolated demos, but it creates schema drift, unsafe rendering, fragile responsive behavior, and slower integration with host adaptation.
+
 ## Risks / Trade-offs
 
 - **Four lanes diverge on data shapes** -> Mitigation: shared contracts land first and all lanes consume them. **STATUS: Contracts are frozen and comprehensive.**
