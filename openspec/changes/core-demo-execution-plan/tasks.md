@@ -56,7 +56,7 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Status**: NOT DONE. Critical gap — no runtime validation of harness events or primitive trees.
 - [x] 1.4 Normalize primitive node names so generated trees use the same casing as `PrimitiveRenderer`.
   - **Status**: Done. `PrimitiveRenderer.tsx` maps 92 primitives via `primitiveMap`.
-- [ ] 1.5 Add contract fixtures for all event types and all four scenario context packets.
+- [ ] 1.5 Add contract fixtures for all event types, normalized web evidence/media results, and all four scenario context packets.
   - **Status**: NOT DONE. Only mock timeout-based events exist in `frontend/src/harness/mockEvents.ts`.
 - [x] 1.6 Keep repo-local OpenSpec skills in `.codex/skills` and mirror them into `.agents/skills` for team discoverability.
   - **Status**: Done. Both directories present with openspec and impeccable skills.
@@ -79,7 +79,13 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Status**: DONE (uncommitted). `policy.ts` has `evaluateToolApproval()` with risk-based logic. **NEEDS COMMIT.**
 - [ ] 2.8 Implement verification result handling for success, failed, partial, and unknown outcomes.
   - **Signal**: Types exist but `session.ts` does not verify action results.
-- [ ] 2.9 Add Vitest unit tests for state transitions, classifier outputs, approval policy, UI validation, and verification decisions.
+- [ ] 2.9 Implement provider-neutral `web.search` and `web.fetch` tool interfaces.
+  - **Signal**: Exa is the MVP provider, but product logic must consume normalized search/content results, including optional `imageUrl`, `faviconUrl`, and `media[]` fields for GenUI evidence.
+- [ ] 2.10 Implement Exa MVP provider for search, contents/highlights, representative images, favicons, page image links, people lookup, company lookup, and error normalization.
+  - **Signal**: Exa supports `people` and `company` categories, but those categories have filter restrictions that must be encoded in the provider. Exa also exposes `image`, `favicon`, and `contents.extras.imageLinks`; these must be normalized behind Clickthrough contracts.
+- [ ] 2.11 Add local caching for demo web queries and cap default result counts.
+  - **Signal**: Needed to preserve free-tier credits and make recording reliable.
+- [ ] 2.12 Add Vitest unit tests for state transitions, classifier outputs, approval policy, UI validation, web tool normalization including media fields, and verification decisions.
   - **Signal**: NO test infrastructure. `vitest` not in package.json.
 
 ## 3. User B - DOM Scanner, Browser Tools, And SharkAuth
@@ -115,7 +121,7 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Signal**: Skeleton primitive exists but demos use static `setTimeout` toggles. Need to refactor ONE demo to use `LocalHarnessSession.events()` + `applyHarnessEvent()`.
 - [x] 4.6 Ensure approval gates and CT marks remain visibly distinct from host-adapted surfaces.
   - **Status**: DONE. ApprovalGate and CTMark primitives exist with distinct styling.
-- [ ] 4.7 Add Playwright browser checks for overlay rendering, event streaming, approval gating, and responsive fit.
+- [ ] 4.7 Add Playwright browser checks for overlay rendering, event streaming, approval gating, source image/fallback rendering, and responsive fit.
   - **Signal**: NO Playwright config exists. Not in package.json.
 
 ## 5. User D - Integration, Acceptance, And Winning Demo
@@ -124,7 +130,7 @@ These files **compile cleanly** (`tsc --noEmit` passes) and represent significan
   - **Signal**: Demos are currently pre-rendered static compositions. Need acceptance criteria for event-driven versions.
 - [ ] 5.2 Create test/page fixtures only where needed for repeatability, keeping fixtures separate from harness runtime logic.
   - **Signal**: No fixture files exist. Need mock page contexts and event sequences.
-- [x] 5.3 Verify the Twitter/X flow renders claim highlight, web/source tool progress, evidence, contradiction, verdict, and uncertainty from harness output.
+- [x] 5.3 Verify the Twitter/X flow renders claim highlight, Exa-backed web/source tool progress, media-grounded evidence, contradiction, verdict, and uncertainty from harness output.
   - **Status**: PARTIAL. Static demo exists. Needs harness-driven version.
 - [x] 5.4 Verify the OAuth PKCE flow renders selected text extraction, quote, sequence diagram, stepper, with/without PKCE control, and comparison state from harness output.
   - **Status**: PARTIAL. Static demo exists. Needs harness-driven version.

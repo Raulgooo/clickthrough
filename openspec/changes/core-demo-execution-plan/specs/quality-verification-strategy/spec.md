@@ -22,12 +22,21 @@ The system SHALL include contract tests for event payloads, generated UI payload
 - **WHEN** the scanner returns a page context fixture
 - **THEN** the harness contract test MUST confirm classification and planning can consume it
 
+#### Scenario: Web evidence consumed by generated UI
+- **WHEN** a `web.search` or `web.fetch` fixture includes highlights, favicon URL, representative image URL, and page image links
+- **THEN** contract tests MUST confirm the normalized web result can be transformed into evidence primitives without Exa-specific fields leaking into renderer logic
+
 ### Requirement: Browser integration tests
 The system SHALL include browser-level tests for the four core scenes and SharkAuth action flow where feasible.
 
 #### Scenario: Verification scene streams UI
 - **WHEN** the verification test invokes Clickthrough on the tweet claim
 - **THEN** the browser test MUST observe skeleton/progress UI followed by evidence and verdict UI
+
+#### Scenario: Verification scene renders visual source grounding
+- **WHEN** the verification test receives web evidence with image metadata
+- **THEN** the browser test MUST observe at least one source image or favicon embedded in the generated evidence UI
+- **AND** the test MUST pass when image metadata is absent by falling back to text-only source evidence
 
 #### Scenario: SharkAuth approval blocks execution
 - **WHEN** the SharkAuth action test reaches the approval gate

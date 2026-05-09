@@ -29,6 +29,7 @@ OpenSpec was initialized for this repo as part of this planning change. This des
 - Make all four demo scenes distinct: verification dashboard, PDF explainer, SharkAuth action surface, and response assistant.
 - Let four users work independently through owned lanes chosen for fastest quality and lowest merge contention.
 - Use SharkAuth as a real target for the action scene while keeping the DOM scanner generic enough to work across arbitrary pages.
+- Use Exa for MVP web search and content extraction while keeping web tools provider-agnostic.
 - Add a test strategy that catches harness, schema, scanner, approval, and browser-regression failures before recording.
 - Use OpenSpec artifacts as the shared source for what must be true before implementation starts.
 
@@ -102,6 +103,21 @@ The fastest high-quality split is:
 
 This split keeps the harness and scanner separate, keeps renderer ownership clean, and gives one person responsibility for demo coherence.
 
+### Decision 8: Use Exa as the MVP web search provider, behind generic tools
+
+Clickthrough needs reliable web evidence quickly for the verification scene. Exa is the best MVP default because it provides search and page contents/highlights in one agent-friendly API, has a free tier suitable for hackathon usage, and supports specialized `people` and `company` categories for profile/company discovery.
+
+The harness must expose provider-neutral tools:
+
+```txt
+web.search(query, options)
+web.fetch(url, options)
+```
+
+Exa is an implementation detail behind those tools. Use `contents.highlights` for token-efficient evidence, cap result count, and cache demo queries during development. For LinkedIn-style lookup, use Exa's `people` or `company` category and respect its restrictions: people/company categories do not support date filters or `excludeDomains`, and `people.includeDomains` only accepts LinkedIn domains.
+
+Alternative considered: self-host SearXNG for zero API cost. That is more OSS-aligned, but it adds setup and reliability risk. Scrapling is useful for fetch/extraction/crawling, but it is not a search index and should not be forked for MVP.
+
 ## Risks / Trade-offs
 
 - **Four lanes diverge on data shapes** -> Mitigation: shared contracts land first and all lanes consume them. **STATUS: Contracts are frozen and comprehensive.**
@@ -113,6 +129,7 @@ This split keeps the harness and scanner separate, keeps renderer ownership clea
 - **Merge conflicts from broad frontend edits** -> Mitigation: ownership lanes avoid overlapping files; demos consume shared runtime rather than each lane editing every scene. **STATUS: Primitives and renderer are stable. New work should go in `harness/runtime/`, `scanner/`, and `demos/` (refactored).**
 - **Harness/browser contract drift** -> Mitigation: keep core contracts in TypeScript, derive any JSON Schema from them, and test example payloads end to end. **STATUS: No validation layer. Zod needed.**
 - **Premature transport work slows the core loop** -> Mitigation: implement async iterable/session-port first; add WebSocket/SSE only as a transport adapter after the harness loop works. **STATUS: No transport needed for Vite demo. In-process async iterable is sufficient.**
+- **Exa free tier or API key issues break verification** -> Mitigation: cache demo query results, cap searches, and keep a provider interface that can fall back to saved fixtures, SearXNG, Brave, or direct fetch.
 - **NEW RISK: Scanner is critical path** -> The DOM scanner blocks harness classification, planning, and all end-to-end demos. Without it, the harness has no page context. **Mitigation: Build minimal scanner first (selected text + URL + theme) before full capability map extraction.**
 - **NEW RISK: Zero tests** -> No automated validation means regressions are invisible. **Mitigation: Add Vitest immediately for contract and harness state tests. Playwright can follow.**
 

@@ -40,6 +40,10 @@ export function EvidenceSource({
   publisher,
   date,
   snippet,
+  faviconUrl,
+  imageUrl,
+  imageAlt,
+  media,
   stance,
   quality,
   freshness,
@@ -47,6 +51,15 @@ export function EvidenceSource({
 }: EvidenceSourceProps & { className?: string }) {
   const badge = qualityBadge(quality);
   const faviconText = (publisher || title).slice(0, 2).toLowerCase();
+  const thumbnail =
+    imageUrl ??
+    media?.find((asset) => asset.kind !== "favicon" && asset.url)?.url;
+  const thumbnailAlt =
+    imageAlt ??
+    media?.find((asset) => asset.url === thumbnail)?.alt ??
+    `${title} image`;
+  const favicon =
+    faviconUrl ?? media?.find((asset) => asset.kind === "favicon")?.url;
 
   return (
     <div
@@ -56,9 +69,25 @@ export function EvidenceSource({
         className
       )}
     >
-      <div className="w-4 h-4 rounded-sm bg-surface-container-high border border-outline flex items-center justify-center font-label-mono text-[8px] text-on-surface-variant flex-shrink-0">
-        {faviconText}
-      </div>
+      {thumbnail ? (
+        <img
+          src={thumbnail}
+          alt={thumbnailAlt}
+          className="w-12 h-12 rounded-md object-cover border border-outline flex-shrink-0 bg-surface-container-high"
+          loading="lazy"
+        />
+      ) : favicon ? (
+        <img
+          src={favicon}
+          alt=""
+          className="w-4 h-4 rounded-sm border border-outline flex-shrink-0 bg-surface-container-high"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-4 h-4 rounded-sm bg-surface-container-high border border-outline flex items-center justify-center font-label-mono text-[8px] text-on-surface-variant flex-shrink-0">
+          {faviconText}
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
         <div className="font-body-sm text-body-sm font-medium text-on-background truncate">

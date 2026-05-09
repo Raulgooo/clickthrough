@@ -289,12 +289,25 @@ export type IdentityCardProps = {
   matchConfidence?: number;
 };
 
+export type EvidenceMediaAsset = {
+  kind?: "representative" | "favicon" | "page-image" | "screenshot" | "unknown";
+  url: string;
+  alt?: string;
+  sourceUrl?: string;
+  width?: number;
+  height?: number;
+};
+
 export type EvidenceSourceProps = {
   title: string;
   url: string;
   publisher?: string;
   date?: string;
   snippet?: string;
+  faviconUrl?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  media?: EvidenceMediaAsset[];
   stance?: "supports" | "contradicts" | "neutral" | "background";
   quality?: "high" | "medium" | "low" | "unknown";
   freshness?: "current" | "stale" | "unknown";

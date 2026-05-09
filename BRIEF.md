@@ -1,0 +1,260 @@
+# Clickthrough Team Brief
+
+## What We Are Building
+
+Clickthrough is a browser-native intent agent.
+
+The user stays on the current page, invokes CT, and states intent. Clickthrough observes the page, understands the task, generates the exact overlay UI needed, asks for approval when action is risky, executes through browser tools, and verifies the result.
+
+This is not a chatbot, sidebar, or separate assistant app. The generated interface is the product.
+
+## Hackathon Goal
+
+Win by showing working code that clearly proves:
+
+- the agent renders UI at runtime
+- the UI changes shape by intent and page context
+- the user never leaves the page
+- the product goes beyond chat
+- risky actions require approval
+- actions end with verification
+
+The demo should land in these tracks:
+
+- Kill the Dashboard
+- The Copilot That Ships
+- No Designer, No Problem
+
+## Core Capabilities
+
+1. **Verify**
+   - User asks if a claim is true.
+   - CT highlights the claim and generates an evidence dashboard with sources, contradictions, confidence, verdict, and uncertainty.
+
+2. **Understand**
+   - User asks CT to explain dense content visually.
+   - CT generates a visual explainer with selected quote, sequence diagram, step controls, toggles, and callouts.
+
+3. **Act**
+   - User asks CT to do a workflow inside SharkAuth.
+   - CT scans the page, generates an action surface, shows risk, asks approval, executes, and verifies.
+
+4. **Respond**
+   - User asks what a message means and what to say.
+   - CT generates a private response helper with explanation, drafts, tone controls, and no auto-send.
+
+## Architecture Direction
+
+We are building a **Claude Code-style harness**, not a normal HTTP app first.
+
+The harness should behave like a long-lived runtime session:
+
+```txt
+page context + user intent
+  -> harness state machine
+  -> typed tool calls
+  -> generated primitive UI patches
+  -> approval gates
+  -> browser action execution
+  -> verification
+  -> streamed events back to overlay
+```
+
+First implementation should use an in-process TypeScript runtime with async events:
+
+```ts
+for await (const event of session.events()) {
+  applyHarnessEvent(event);
+}
+```
+
+No HTTP server is required for the first milestone. WebSocket/SSE can come later only if we need a separate process, extension background worker, or remote service.
+
+## Tech Stack
+
+- Vite
+- React
+- TypeScript
+- Tailwind/CSS variables
+- TypeScript harness runtime
+- Vitest for harness/unit tests
+- Playwright for browser/integration tests
+- Exa as MVP web search/content provider behind generic `web.search` and `web.fetch` contracts
+- Exa media metadata for representative source images, favicons, and page image links where available
+- AG-UI-style event stream for visible runtime generation
+- MCP Apps as tool/app discovery framing
+- Clickthrough primitive schema from `UI_PRIMITIVES.md`
+
+Optional only if useful:
+
+- A2UI as schema influence
+- CopilotKit for hotkey/approval/event wiring, but never as visible chat UI
+- WebSocket/SSE transport after the in-process harness works
+- SearXNG, Brave Search, or Scrapling later if Exa cost, limits, or coverage become blockers
+
+## Product Rules
+
+- Do not build generic chat UI as the main experience.
+- Do not hardcode final demo UI trees.
+- Do not create runtime scenario profiles.
+- Demo repeatability belongs in tests, fixtures, and reset controls, not fake harness output.
+- The harness must start from page context, prompt, available tools, and primitive manifest.
+- Approval is enforced by harness policy, not model suggestion.
+- No success claim without verification.
+- Generated UI must use validated primitives, not arbitrary HTML.
+
+## Team Split
+
+### User A: Harness Runtime
+
+Owns the TypeScript harness.
+
+Work:
+
+- session interface with streaming input and async event output
+- state machine
+- intent classification
+- planner boundary
+- Exa-backed `web.search` / `web.fetch` tool interfaces, kept provider-neutral
+- tool policy
+- approval enforcement
+- UI validation
+- verification result handling
+- Vitest tests for harness logic
+
+Primary files:
+
+- `frontend/src/harness/runtime/`
+- `frontend/src/types/harness.ts`
+- `frontend/src/types/ui.ts`
+
+### User B: DOM Scanner And SharkAuth
+
+Owns page perception and browser actions.
+
+Work:
+
+- generic DOM scanner
+- selected text and visible text extraction
+- accessible names, forms, buttons, links, tables, dialogs
+- stable element references
+- host theme sampling
+- browser action tools: highlight, click, fill, select, wait, verify
+- real SharkAuth API key workflow through generic scanner/action contracts
+
+Primary files:
+
+- `frontend/src/browser/`
+- future extension/content bridge if needed
+
+### User C: Overlay Stream Renderer
+
+Owns the event consumer and generated UI rendering.
+
+Work:
+
+- consume harness events
+- apply UI patches
+- render `ClickthroughNode` trees through `PrimitiveRenderer`
+- surface validation errors safely
+- host style adaptation
+- skeleton/progress-to-final transitions
+- approval gate presentation
+- Playwright checks for overlay behavior
+
+Primary files:
+
+- `frontend/src/renderer/`
+- `frontend/src/renderer/stream/`
+- `frontend/src/primitives/`
+- `frontend/src/harness/useHarness.ts`
+
+### User D: Integration, Acceptance, And Demo
+
+Owns coherence and winning presentation.
+
+Work:
+
+- define acceptance checks for all four scenes
+- create test/page fixtures only when needed
+- verify each scene uses real harness output
+- coordinate integration across Users A, B, and C
+- add reset/replay controls that do not fake harness logic
+- write final 2-4 minute script
+- keep AG-UI streaming and MCP tool discovery visible in narration
+
+Primary files:
+
+- `frontend/src/demos/`
+- `docs/team-kickoff/`
+- `DEMO.md`
+- test fixtures if needed
+
+## Immediate Objectives
+
+1. Make shared contracts compile.
+2. Make the harness emit real typed events.
+3. Make the scanner produce useful page context.
+4. Add Exa-backed `web.search` and `web.fetch` tools behind generic interfaces.
+5. Make the renderer consume events and apply primitive patches.
+6. Wire one vertical slice end to end.
+7. Expand to all four demo intents.
+8. Add approval and verification to SharkAuth.
+9. Run build and browser checks.
+10. Record a 2-4 minute demo with working code only.
+
+## Web Search MVP
+
+Use Exa for the MVP/hackathon search path. It is easy to integrate, built for agent workflows, and its free tier should be enough if we cap calls and cache demo queries.
+
+Tool boundary:
+
+```txt
+web.search(query, options) -> ranked source results
+web.fetch(url, options) -> clean text/highlights/metadata
+```
+
+Normalized source contract:
+
+```txt
+GroundedWebSource {
+  title, url, publisher?, author?, publishedDate?, retrievedAt,
+  snippet?, highlights[], quality?, freshness?,
+  imageUrl?, faviconUrl?, media[],
+  provider, providerResultId?
+}
+```
+
+Provider plan:
+
+- Default MVP provider: Exa Search API.
+- Search evidence mode: use `contents.highlights` for token-efficient snippets.
+- Visual evidence mode: normalize Exa `image`, `favicon`, and `contents.extras.imageLinks` into `imageUrl`, `faviconUrl`, and `media[]` for GenUI primitives.
+- Known URL mode: use Exa Contents API or direct browser/readability fallback.
+- People/company lookup: use Exa `people` and `company` categories where useful.
+- LinkedIn/profile lookup: Exa has people/company search categories aimed at LinkedIn/profile discovery, but with restrictions. `people.includeDomains` only accepts LinkedIn domains, and `people`/`company` categories do not support date filters or `excludeDomains`.
+- Cost control: small result counts, local cache for development/demo queries, and no repeated fresh calls during recording.
+- Later fallbacks: SearXNG for OSS metasearch, Brave Search for reliable paid/free-credit fallback, Scrapling for hard page extraction/crawling.
+
+Do not bake Exa into product architecture. Exa is one provider behind Clickthrough's generic web tools.
+
+Renderer plan:
+
+- Evidence sources may render a thumbnail, favicon, or text-only fallback.
+- Rich visual layouts should use `ImageFrame`, `MediaFrame`, `CarouselFrame`, or `EvidenceSource` props from the normalized source contract.
+- Images are source evidence, not decorative assets. Every web image must remain tied to a visible source URL or publisher.
+
+Testing plan:
+
+- Vitest owns harness, provider normalization, schema validation, approval policy, and web evidence contract fixtures.
+- Playwright owns visible overlay behavior, event streaming, approval gates, responsive fit, and source image/fallback rendering.
+
+## Key References
+
+- `DEMO.md`: storyboard source of truth
+- `UI_PRIMITIVES.md`: generated UI schema and primitive rules
+- `AGENT_LOOP.md`: agent loop architecture
+- `HARNESS.md`: harness policies and tool execution model
+- `STACK.md`: stack decisions
+- `openspec/changes/core-demo-execution-plan/`: execution plan and specs
+- `docs/team-kickoff/`: individual role briefs
