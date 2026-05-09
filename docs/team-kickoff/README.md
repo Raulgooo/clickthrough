@@ -36,6 +36,7 @@ Web/search contract:
 
 Core references:
 
+- `docs/team-kickoff/DESIGN-CONTRACTS.md`
 - `openspec/changes/core-demo-execution-plan/design.md`
 - `openspec/changes/core-demo-execution-plan/tasks.md`
 - `HARNESS.md`
