@@ -1,5 +1,6 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import type { ClickthroughNode } from "@/types/primitives";
+import { ActionContext } from "./ActionContext";
 
 // ── Primitive Imports ──
 
@@ -269,34 +270,145 @@ const primitiveMap: Record<string, React.ComponentType<any>> = {
   ChartFrame,
 };
 
+// ── Interactive primitive types that need local state ──
+
+const INPUT_PRIMITIVES = new Set([
+  "TextField",
+  "TextArea",
+  "Select",
+  "Toggle",
+  "SegmentedControl",
+  "CheckboxRow",
+  "RadioRow",
+  "Slider",
+]);
+
+const BUTTON_PRIMITIVES = new Set(["Button", "IconButton"]);
+
 // ── Recursive Node Renderer ──
 
-export const renderNode = (node: ClickthroughNode): React.ReactNode => {
+function renderNode(
+  node: ClickthroughNode | string | null | undefined,
+  path: string,
+  onAction: ((actionId: string, payload?: Record<string, unknown>) => void) | undefined,
+  localState: Record<string, unknown>,
+  setLocalState: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
+): React.ReactNode {
+  if (node === null || node === undefined) return null;
+  if (typeof node === "string") return node;
+
   const Component = primitiveMap[node.type];
   if (!Component) {
     console.error(`[PrimitiveRenderer] Unknown primitive type: ${node.type}`);
-    return null;
+    return (
+      <ErrorState
+        title="Generated primitive could not render"
+        body={`Unsupported primitive: ${node.type || "missing type"}`}
+      />
+    );
+  }
+
+  const props = { ...(node.props || {}) } as Record<string, unknown>;
+
+  // ── Wire actions for button primitives ──
+  if (BUTTON_PRIMITIVES.has(node.type) && onAction) {
+    const actionId = props.actionId as string | undefined;
+    if (actionId) {
+      props.onClick = () => onAction(actionId, props);
+    }
+  }
+
+  // ── Wire actions for ApprovalGate ──
+  if (node.type === "ApprovalGate" && onAction) {
+    const approvalActionId = props.approvalActionId as string | undefined;
+    if (approvalActionId) {
+      props.onApprove = () => onAction(approvalActionId, props);
+    }
+    props.onCancel = () => onAction("action:cancel", { source: "ApprovalGate", ...props });
+  }
+
+  // ── Wire actions for SensitiveContextGuard ──
+  if (node.type === "SensitiveContextGuard" && onAction) {
+    const continueActionId = props.continueActionId as string | undefined;
+    if (continueActionId) {
+      props.onContinue = () => onAction(continueActionId, props);
+    }
+    props.onCancel = () => onAction("action:cancel", { source: "SensitiveContextGuard", ...props });
+  }
+
+  // ── Wire local state for input primitives ──
+  if (INPUT_PRIMITIVES.has(node.type)) {
+    const stateKey = path;
+    const currentValue = localState[stateKey];
+
+    if (node.type === "Toggle") {
+      props.checked = currentValue !== undefined ? currentValue : props.checked;
+      props.onChange = (checked: boolean) => {
+        setLocalState((prev) => ({ ...prev, [stateKey]: checked }));
+      };
+    } else if (node.type === "SegmentedControl" || node.type === "Select") {
+      props.value = currentValue !== undefined ? currentValue : props.value;
+      props.onChange = (value: string) => {
+        setLocalState((prev) => ({ ...prev, [stateKey]: value }));
+      };
+    } else if (node.type === "Slider") {
+      props.value = currentValue !== undefined ? currentValue : props.value;
+      props.onChange = (value: number) => {
+        setLocalState((prev) => ({ ...prev, [stateKey]: value }));
+      };
+    } else if (node.type === "TextField" || node.type === "TextArea") {
+      props.value = currentValue !== undefined ? currentValue : props.value;
+      props.onChange = (value: string) => {
+        setLocalState((prev) => ({ ...prev, [stateKey]: value }));
+      };
+    } else if (node.type === "CheckboxRow") {
+      // For CheckboxRow, we track a Record<string, boolean>
+      const checkedMap = (currentValue as Record<string, boolean> | undefined) || {};
+      const items = (props.items as Array<{ id: string; checked?: boolean }> | undefined) || [];
+      props.items = items.map((item) => ({
+        ...item,
+        checked: checkedMap[item.id] !== undefined ? checkedMap[item.id] : item.checked,
+      }));
+      props.onChange = (id: string, checked: boolean) => {
+        setLocalState((prev) => ({
+          ...prev,
+          [stateKey]: { ...((prev[stateKey] as Record<string, boolean>) || {}), [id]: checked },
+        }));
+      };
+    } else if (node.type === "RadioRow") {
+      props.value = currentValue !== undefined ? currentValue : props.value;
+      props.onChange = (value: string) => {
+        setLocalState((prev) => ({ ...prev, [stateKey]: value }));
+      };
+    }
   }
 
   const children = node.children?.map((child, index) => (
-    <Fragment key={`${child.type}-${index}`}>
-      {renderNode(child)}
+    <Fragment key={`${typeof child === "string" ? "text" : child.type}-${index}`}>
+      {renderNode(child, `${path}/${index}`, onAction, localState, setLocalState)}
     </Fragment>
   ));
 
   return (
-    <Component {...(node.props || {})}>
+    <Component {...props}>
       {children}
     </Component>
   );
-};
+}
 
 // ── Component Entry Point ──
 
 export type PrimitiveRendererProps = {
   tree: ClickthroughNode;
+  onAction?: (actionId: string, payload?: Record<string, unknown>) => void;
 };
 
-export const PrimitiveRenderer = ({ tree }: PrimitiveRendererProps) => {
-  return <>{renderNode(tree)}</>;
+export const PrimitiveRenderer = ({ tree, onAction }: PrimitiveRendererProps) => {
+  const [localState, setLocalState] = useState<Record<string, unknown>>({});
+
+  return (
+    <ActionContext.Provider value={onAction}>
+      <>{renderNode(tree, "root", onAction, localState, setLocalState)}</>
+    </ActionContext.Provider>
+  );
 };

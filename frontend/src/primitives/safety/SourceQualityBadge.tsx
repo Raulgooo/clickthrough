@@ -32,9 +32,9 @@ export function SourceQualityBadge({
             : "bg-on-surface-variant"
         )}
       />
-      {quality
+      {quality && quality !== "unknown"
         ? quality.charAt(0).toUpperCase() + quality.slice(1)
-        : "Unknown"}
+        : "Needs review"}
       {reason && (
         <span className="text-on-surface-variant ml-xs">{reason}</span>
       )}

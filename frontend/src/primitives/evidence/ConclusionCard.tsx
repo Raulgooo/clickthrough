@@ -38,7 +38,7 @@ function verdictLabel(
     case "unknown":
     default:
       return {
-        text: "Unknown",
+        text: "Unverified",
         style: "bg-surface-container text-on-surface-variant border border-dashed border-outline",
         dot: "border border-on-surface-variant",
       };

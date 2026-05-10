@@ -1,9 +1,11 @@
 import { scanDom } from "./domScanner";
 import { sampleHostTheme } from "./hostTheme";
+import { captureViewport } from "./captureViewport";
 import type { PageContextPacket } from "@/harness/runtime";
 
-export function buildPageContextPacket(): PageContextPacket {
+export async function buildPageContextPacket(): Promise<PageContextPacket> {
   const scan = scanDom();
+  const screenshot = await captureViewport();
 
   return {
     url: window.location.href,
@@ -13,5 +15,7 @@ export function buildPageContextPacket(): PageContextPacket {
     nearbyElements: scan.elements,
     capabilityMap: scan.capabilities,
     hostTheme: sampleHostTheme(),
+    structured: scan.structured,
+    screenshot,
   };
 }

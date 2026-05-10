@@ -5,8 +5,10 @@ export function SensitiveContextGuard({
   category,
   message,
   continueActionId,
+  onContinue,
+  onCancel,
   className,
-}: SensitiveContextGuardProps & { className?: string }) {
+}: SensitiveContextGuardProps & { onContinue?: () => void; onCancel?: () => void; className?: string }) {
   return (
     <div
       data-ct-primitive="SensitiveContextGuard"
@@ -27,11 +29,17 @@ export function SensitiveContextGuard({
         {message}
       </p>
       <div className="flex gap-sm justify-center">
-        <button className="px-md py-sm bg-transparent text-on-surface-variant rounded font-label-mono text-label-mono hover:bg-surface-container-high transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-md py-sm bg-transparent text-on-surface-variant rounded font-label-mono text-label-mono hover:bg-surface-container-high transition-colors"
+        >
           Cancel
         </button>
         <button
+          type="button"
           data-action-id={continueActionId}
+          onClick={onContinue}
           className="px-md py-sm bg-primary text-on-primary rounded border border-primary font-label-mono text-label-mono hover:bg-inverse-surface transition-colors"
         >
           Continue

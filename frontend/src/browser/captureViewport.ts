@@ -1,41 +1,41 @@
-import html2canvas from "html2canvas";
-
-export async function captureViewport(): Promise<string> {
+export async function captureViewport(): Promise<string | undefined> {
   try {
-    const canvas = await html2canvas(document.body, {
+    // Try native browser extension capture first
+    const runtime = (globalThis as any).chrome?.runtime;
+    if (runtime?.sendMessage) {
+      const dataUrl = await new Promise<string | undefined>((resolve) => {
+        runtime.sendMessage({ action: "captureViewport" }, (response: any) => {
+          resolve(response?.dataUrl);
+        });
+      });
+      if (dataUrl) return dataUrl;
+    }
+
+    // Fallback: html2canvas-style approach using dom-to-image or canvas
+    // For hackathon MVP, we'll use a simple canvas-based approach
+    const canvas = await htmlToCanvas(document.documentElement);
+    if (canvas) {
+      return canvas.toDataURL("image/jpeg", 0.7);
+    }
+  } catch (err) {
+    console.warn("[captureViewport] Failed:", err);
+  }
+  return undefined;
+}
+
+async function htmlToCanvas(element: HTMLElement): Promise<HTMLCanvasElement | null> {
+  try {
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(element, {
       logging: false,
       useCORS: true,
       allowTaint: true,
-      scale: 0.5, // smaller file size, faster upload
-      x: window.scrollX,
-      y: window.scrollY,
-      width: window.innerWidth,
+      scale: 0.5, // Reduce quality for speed
       height: window.innerHeight,
+      windowHeight: window.innerHeight,
     });
-    return canvas.toDataURL("image/jpeg", 0.7);
-  } catch (err) {
-    console.error("[captureViewport] Screenshot failed:", err);
-    return "";
+    return canvas;
+  } catch {
+    return null;
   }
-}
-
-export function getCursorPosition(): { x: number; y: number } {
-  return { x: window.lastMouseX ?? window.innerWidth / 2, y: window.lastMouseY ?? window.innerHeight / 2 };
-}
-
-// Track mouse globally
-declare global {
-  interface Window {
-    lastMouseX: number;
-    lastMouseY: number;
-  }
-}
-
-if (typeof window !== "undefined") {
-  window.lastMouseX = window.innerWidth / 2;
-  window.lastMouseY = window.innerHeight / 2;
-  document.addEventListener("mousemove", (e) => {
-    window.lastMouseX = e.clientX;
-    window.lastMouseY = e.clientY;
-  });
 }

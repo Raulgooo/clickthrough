@@ -25,7 +25,7 @@ const navItems: { route: Route; label: string }[] = [
 ];
 
 export const App = () => {
-  const [route, setRoute] = useState<Route>('gallery');
+  const [route, setRoute] = useState<Route>('harness');
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {

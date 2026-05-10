@@ -6,7 +6,13 @@ import type {
   HarnessState,
   IntentClassification,
 } from "./contracts";
-import { classifyIntent, generateUiTree, generateClarificationPrompt } from "./openrouter";
+import {
+  buildSearchQuery,
+  classifyIntent,
+  deterministicFallbackUi,
+  generateUiTree,
+  generateClarificationPrompt,
+} from "./openrouter";
 import { getTool } from "./tools";
 import { validateGeneratedUi } from "./validateUi";
 import type { ClickthroughNode } from "@/types/primitives";
@@ -68,6 +74,7 @@ export class LocalHarnessSession implements HarnessSession {
     };
 
     await this.runLoop(runInput);
+    this.close();
   }
 
   async *events(): AsyncIterable<HarnessEvent> {
@@ -159,7 +166,7 @@ export class LocalHarnessSession implements HarnessSession {
           try {
             const result = await searchTool.execute(
               {
-                query: input.intent.prompt,
+                query: buildSearchQuery(input.intent, input.page, classification),
                 mode: classification.family === "verify" ? "verify" : "general",
                 count: 5,
                 includeText: true,
@@ -180,7 +187,23 @@ export class LocalHarnessSession implements HarnessSession {
                 summaryForModel: `Found ${(result as any).sources?.length || 0} sources.`,
               },
             });
+
+            // Progressive: emit evidence sources as they arrive
+            if (classification.family === "verify" && toolResults.search?.sources?.length) {
+              const evidencePatch = this.buildEvidencePatch(toolResults.search.sources.slice(0, 2));
+              if (evidencePatch) {
+                this.emit({ type: "ui.patch", patch: evidencePatch });
+              }
+            }
           } catch (err: any) {
+            toolResults.search = {
+              query: buildSearchQuery(input.intent, input.page, classification),
+              provider: "fallback",
+              retrievedAt: new Date().toISOString(),
+              cacheStatus: "bypass",
+              sources: [],
+              warnings: [`web.search failed: ${err.message}`],
+            };
             this.emit({
               type: "tool.finished",
               result: {
@@ -188,6 +211,45 @@ export class LocalHarnessSession implements HarnessSession {
                 toolName: "web.search",
                 status: "failed",
                 summaryForModel: `Search failed: ${err.message}`,
+              },
+            });
+          }
+        }
+      }
+
+      // Fetch top sources for richer context
+      if (budget.toolCallsRemaining > 0 && toolResults.search?.sources?.length) {
+        const fetchTool = getTool("web.fetch");
+        if (fetchTool) {
+          const topSource = toolResults.search.sources[0];
+          const callId = crypto.randomUUID();
+          this.emit({
+            type: "tool.started",
+            call: { callId, toolName: "web.fetch", input: { url: topSource.url } },
+          });
+
+          try {
+            const fetchResult = await fetchTool.execute({ url: topSource.url, maxCharacters: 2000 }, input);
+            toolResults.fetch = fetchResult;
+            budget.toolCallsRemaining--;
+
+            this.emit({
+              type: "tool.finished",
+              result: {
+                callId,
+                toolName: "web.fetch",
+                status: "success",
+                summaryForModel: `Fetched ${topSource.url}`,
+              },
+            });
+          } catch (err: any) {
+            this.emit({
+              type: "tool.finished",
+              result: {
+                callId,
+                toolName: "web.fetch",
+                status: "failed",
+                summaryForModel: `Fetch failed: ${err.message}`,
               },
             });
           }
@@ -209,34 +271,32 @@ export class LocalHarnessSession implements HarnessSession {
         tree = await generateUiTree(input.intent, input.page, classification, toolResults);
       } catch (err) {
         console.error("[Harness] UI generation failed:", err);
-        // Fallback: generate a simple error panel
         tree = {
           type: "Panel",
-          props: { tone: "warning", chrome: "standard" },
+          props: { tone: "warning", chrome: "standard", title: "Could not generate interface" },
           children: [
             {
-              type: "Heading",
-              props: { level: 3 },
-              children: [{ type: "BodyText", props: { children: "Could not generate interface" } }],
-            },
-            {
-              type: "BodyText",
+              type: "ErrorState",
               props: {
-                children: `Something went wrong while building the overlay. Error: ${(err as Error).message}`,
+                title: "Could not generate interface",
+                body: `Something went wrong while building the overlay. Error: ${(err as Error).message}`,
+                retryActionId: "action:retry",
               },
-            },
-            {
-              type: "Button",
-              props: { label: "Try again", variant: "primary" },
             },
           ],
         };
       }
 
       // Validate
-      const validation = validateGeneratedUi(tree);
+      let validation = validateGeneratedUi(tree);
       if (!validation.valid) {
         console.warn("[Harness] UI validation failed:", validation.errors);
+        tree = deterministicFallbackUi(input.intent, input.page, classification, toolResults);
+        validation = validateGeneratedUi(tree);
+      }
+
+      if (!validation.valid) {
+        console.warn("[Harness] Deterministic UI validation failed:", validation.errors);
       }
 
       // Determine overlay mode
@@ -253,7 +313,7 @@ export class LocalHarnessSession implements HarnessSession {
       });
     } catch (err: any) {
       console.error("[Harness] Run loop error:", err);
-      await emitState("failed", err.message || "Unknown error.");
+      await emitState("failed", err.message || "Run failed.");
       this.emit({
         type: "result",
         result: { status: "failed", summary: err.message || "Run failed." },
@@ -332,6 +392,31 @@ export class LocalHarnessSession implements HarnessSession {
       type: "ui.patch",
       patch: { op: "replace", path: "", value: generatedUi },
     });
+  }
+
+  private buildEvidencePatch(sources: any[]): UiPatch | undefined {
+    if (!sources.length) return undefined;
+    const evidenceNodes: ClickthroughNode[] = sources.map((s) => ({
+      type: "EvidenceSource",
+      props: {
+        title: s.title || "Source",
+        publisher: s.publisher || s.domain || "Unknown",
+        url: s.url,
+        snippet: s.snippet || s.summary || "",
+        stance: "background",
+        quality: s.quality || "medium",
+      },
+    }));
+
+    return {
+      op: "add",
+      path: "/root/children/-",
+      value: {
+        type: "Section",
+        props: { title: "Evidence incoming", collapsible: false },
+        children: evidenceNodes,
+      },
+    };
   }
 
   private emitUiTree(

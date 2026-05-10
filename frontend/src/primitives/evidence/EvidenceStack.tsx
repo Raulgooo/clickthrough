@@ -11,7 +11,8 @@ function groupSources(
   }
   const map = new Map<string, EvidenceSourceProps[]>();
   for (const src of sources) {
-    const key = (src[groupBy] as string) ?? "Unknown";
+    const rawKey = src[groupBy] as string | undefined;
+    const key = rawKey && rawKey !== "unknown" ? rawKey : "Needs review";
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(src);
   }

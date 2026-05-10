@@ -25,7 +25,7 @@ export default function HarnessDemo() {
   const [prompt, setPrompt] = useState("Hey CT, is this true?");
 
   const handleSubmit = useCallback(async () => {
-    const page = buildPageContextPacket();
+    const page = await buildPageContextPacket();
     await sendIntent(
       {
         prompt,
@@ -139,7 +139,16 @@ export default function HarnessDemo() {
 
             {uiTree && (
               <div className="p-3">
-                <PrimitiveRenderer tree={uiTree} />
+                <PrimitiveRenderer
+                  tree={uiTree}
+                  onAction={(actionId, payload) => {
+                    console.log("[HarnessDemo] Action:", actionId, payload);
+                    if (actionId === "action:copy") {
+                      const value = payload?.value as string | undefined;
+                      if (value) navigator.clipboard.writeText(value).catch(() => {});
+                    }
+                  }}
+                />
               </div>
             )}
 

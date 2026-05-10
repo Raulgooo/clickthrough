@@ -52,6 +52,39 @@ export type PageContextPacket = {
   hostTheme: HostTheme;
   screenshot?: string; // base64 data URL
   cursorPosition?: { x: number; y: number };
+  structured?: StructuredPageContext;
+};
+
+export type PageType = "twitter" | "pdf" | "chat" | "dashboard" | "article" | "ecommerce" | "generic";
+
+export type StructuredPageContext = {
+  pageType: PageType;
+  url: string;
+  title: string;
+  summary: string;
+  tweet?: {
+    authorName: string;
+    authorHandle: string;
+    text: string;
+    timestamp?: string;
+    engagement?: { replies?: number; retweets?: number; likes?: number };
+  };
+  article?: {
+    title: string;
+    author?: string;
+    publishDate?: string;
+    headings: Array<{ level: number; text: string }>;
+    mainContent: string;
+  };
+  chat?: {
+    messages: Array<{ sender: string; text: string; timestamp?: string }>;
+  };
+  dashboard?: {
+    widgets: Array<{ type: string; label: string }>;
+    forms: Array<{ name: string; fields: string[]; submitLabel?: string }>;
+    tables: Array<{ name: string; headers: string[]; rowCount: number }>;
+  };
+  selectedText?: string;
 };
 
 export type PageCapabilitySummary = {

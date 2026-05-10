@@ -50,6 +50,7 @@ export function EvidenceSource({
   className,
 }: EvidenceSourceProps & { className?: string }) {
   const badge = qualityBadge(quality);
+  const visibleFreshness = freshness && freshness !== "unknown" ? freshness : undefined;
   const faviconText = (publisher || title).slice(0, 2).toLowerCase();
   const thumbnail =
     imageUrl ??
@@ -101,7 +102,7 @@ export function EvidenceSource({
             {snippet}
           </p>
         )}
-        {(date || stance || freshness) && (
+        {(date || stance || visibleFreshness) && (
           <div className="flex items-center gap-sm font-label-mono text-[10px] text-on-surface-variant mt-xs">
             {date && <span>{date}</span>}
             {stance && (
@@ -110,10 +111,10 @@ export function EvidenceSource({
                 <span className="capitalize">{stance}</span>
               </>
             )}
-            {freshness && (
+            {visibleFreshness && (
               <>
                 {(date || stance) && <span className="text-outline">·</span>}
-                <span className="capitalize">{freshness}</span>
+                <span className="capitalize">{visibleFreshness}</span>
               </>
             )}
           </div>

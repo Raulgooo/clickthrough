@@ -6,6 +6,7 @@ import type {
   GroundedWebSource,
   WebMediaAsset,
 } from "./contracts";
+import { providerFetch } from "./providerFetch";
 
 const EXA_BASE = "https://api.exa.ai";
 
@@ -58,8 +59,7 @@ function normalizeExaResult(raw: any, _query: string, provider: string): Grounde
     snippet: raw.summary || raw.text?.slice(0, 300) || undefined,
     highlights: raw.highlights?.map((h: string) => ({ text: h, score: undefined })) || undefined,
     score: raw.score || undefined,
-    quality: raw.score && raw.score > 0.7 ? "high" : raw.score && raw.score > 0.4 ? "medium" : "unknown",
-    freshness: "unknown",
+    quality: raw.score && raw.score > 0.7 ? "high" : raw.score && raw.score > 0.4 ? "medium" : "medium",
     imageUrl: raw.image || undefined,
     faviconUrl: raw.favicon || undefined,
     media: media.length > 0 ? media : undefined,
@@ -94,7 +94,7 @@ export async function exaSearch(input: WebSearchInput): Promise<WebSearchOutput>
     body.excludeDomains = input.excludeDomains;
   }
 
-  const res = await fetch(`${EXA_BASE}/search`, {
+  const res = await providerFetch(`${EXA_BASE}/search`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -138,7 +138,7 @@ export async function exaFetch(input: WebFetchInput): Promise<WebFetchOutput> {
     body.query = input.query;
   }
 
-  const res = await fetch(`${EXA_BASE}/contents`, {
+  const res = await providerFetch(`${EXA_BASE}/contents`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

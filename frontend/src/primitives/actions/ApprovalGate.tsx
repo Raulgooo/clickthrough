@@ -8,8 +8,10 @@ export function ApprovalGate({
   approveLabel,
   cancelLabel,
   approvalActionId,
+  onApprove,
+  onCancel,
   className,
-}: ApprovalGateProps & { className?: string }) {
+}: ApprovalGateProps & { onApprove?: () => void; onCancel?: () => void; className?: string }) {
   return (
     <div
       data-ct-primitive="ApprovalGate"
@@ -37,11 +39,17 @@ export function ApprovalGate({
         </div>
       )}
       <div className="flex gap-sm justify-end">
-        <button className="px-md py-sm bg-transparent text-on-surface-variant rounded font-label-mono text-label-mono hover:bg-surface-container-high transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-md py-sm bg-transparent text-on-surface-variant rounded font-label-mono text-label-mono hover:bg-surface-container-high transition-colors"
+        >
           {cancelLabel}
         </button>
         <button
+          type="button"
           data-action-id={approvalActionId}
+          onClick={onApprove}
           className="px-md py-sm bg-error text-on-error rounded border border-error font-label-mono text-label-mono hover:opacity-90 transition-opacity"
         >
           {approveLabel}

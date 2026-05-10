@@ -135,6 +135,28 @@ function visit(node: ClickthroughNode, errors: string[]): void {
     errors.push(`Unknown primitive: ${node.type}`);
   }
 
+  // Validate action bindings on interactive primitives
+  if (node.type === "Button" || node.type === "IconButton") {
+    const actionId = node.props?.actionId as string | undefined;
+    if (!actionId || !actionId.startsWith("action:")) {
+      errors.push(`Button "${node.props?.label}" is missing a valid actionId. Valid actions: action:copy, action:refresh, action:expand, action:collapse, action:dismiss, action:approve, action:cancel, action:continue, action:retry.`);
+    }
+  }
+
+  if (node.type === "ApprovalGate") {
+    const approvalActionId = node.props?.approvalActionId as string | undefined;
+    if (!approvalActionId || !approvalActionId.startsWith("action:")) {
+      errors.push("ApprovalGate is missing a valid approvalActionId.");
+    }
+  }
+
+  if (node.type === "SensitiveContextGuard") {
+    const continueActionId = node.props?.continueActionId as string | undefined;
+    if (!continueActionId || !continueActionId.startsWith("action:")) {
+      errors.push("SensitiveContextGuard is missing a valid continueActionId.");
+    }
+  }
+
   for (const child of node.children ?? []) {
     visit(child, errors);
   }
