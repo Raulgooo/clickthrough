@@ -135,6 +135,8 @@ function visit(node: ClickthroughNode, errors: string[]): void {
     errors.push(`Unknown primitive: ${node.type}`);
   }
 
+  validateRequiredProps(node, errors);
+
   // Validate action bindings on interactive primitives
   if (node.type === "Button" || node.type === "IconButton") {
     const actionId = node.props?.actionId as string | undefined;
@@ -159,5 +161,63 @@ function visit(node: ClickthroughNode, errors: string[]): void {
 
   for (const child of node.children ?? []) {
     visit(child, errors);
+  }
+}
+
+function validateRequiredProps(node: ClickthroughNode, errors: string[]): void {
+  switch (node.type) {
+    case "IdentityCard":
+      requireStringProp(node, "name", errors);
+      break;
+    case "InlineQuote":
+      requireStringProp(node, "quote", errors);
+      break;
+    case "CodeBlock":
+      requireStringProp(node, "code", errors);
+      break;
+    case "EvidenceSource":
+      requireStringProp(node, "title", errors);
+      requireStringProp(node, "url", errors);
+      break;
+    case "CopyField":
+      requireStringProp(node, "value", errors);
+      break;
+    case "StatusPill":
+    case "Button":
+    case "IconButton":
+    case "Toggle":
+    case "Badge":
+    case "Tag":
+      requireStringProp(node, "label", errors);
+      break;
+    case "Callout":
+      requireStringProp(node, "body", errors);
+      break;
+    case "UncertaintyNote":
+      requireStringProp(node, "reason", errors);
+      break;
+    case "SensitiveContextGuard":
+      requireStringProp(node, "message", errors);
+      break;
+    case "PermissionBadge":
+      requireStringProp(node, "permission", errors);
+      break;
+    case "EmptyState":
+    case "ErrorState":
+    case "SuccessState":
+    case "ApprovalGate":
+      requireStringProp(node, "title", errors);
+      break;
+  }
+}
+
+function requireStringProp(
+  node: ClickthroughNode,
+  propName: string,
+  errors: string[]
+): void {
+  const value = node.props?.[propName];
+  if (typeof value !== "string" || value.trim() === "") {
+    errors.push(`${node.type} is missing required string prop "${propName}".`);
   }
 }

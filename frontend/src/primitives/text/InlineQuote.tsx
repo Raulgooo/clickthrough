@@ -2,11 +2,13 @@ import { cn } from "@/utils/classNames";
 import type { InlineQuoteProps } from "@/types/primitives";
 
 export function InlineQuote({ quote, source, highlight, className }: InlineQuoteProps & { className?: string }) {
+  const displayQuote = typeof quote === "string" && quote.trim() ? quote : "No quote available.";
+
   const renderQuote = () => {
-    if (!highlight || !quote.includes(highlight)) {
-      return <span>{quote}</span>;
+    if (!highlight || !displayQuote.includes(highlight)) {
+      return <span>{displayQuote}</span>;
     }
-    const parts = quote.split(highlight);
+    const parts = displayQuote.split(highlight);
     return (
       <>
         {parts.map((part, i) => (

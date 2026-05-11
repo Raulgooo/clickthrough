@@ -4,11 +4,12 @@ import type { CodeBlockProps } from "@/types/primitives";
 
 export function CodeBlock({ code, language, showLineNumbers, copyable, className }: CodeBlockProps & { className?: string }) {
   const [copied, setCopied] = useState(false);
+  const displayCode = typeof code === "string" ? code : "";
 
   const handleCopy = async () => {
     if (!copyable) return;
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(displayCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -16,7 +17,7 @@ export function CodeBlock({ code, language, showLineNumbers, copyable, className
     }
   };
 
-  const lines = code.split("\n");
+  const lines = displayCode.split("\n");
 
   return (
     <div className={cn("bg-[#1b1b1b] rounded-[0.25rem] p-[8px] overflow-x-auto relative", className)} data-ct-primitive="CodeBlock">

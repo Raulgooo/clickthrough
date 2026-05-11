@@ -9,7 +9,8 @@ export function IdentityCard({
   matchConfidence,
   className,
 }: IdentityCardProps & { className?: string }) {
-  const initials = name
+  const displayName = typeof name === "string" && name.trim() ? name : "Unverified identity";
+  const initials = displayName
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -38,7 +39,7 @@ export function IdentityCard({
       {avatarUrl ? (
         <img
           src={avatarUrl}
-          alt={name}
+          alt={displayName}
           className="w-10 h-10 rounded-full border border-outline object-cover flex-shrink-0"
         />
       ) : (
@@ -49,7 +50,7 @@ export function IdentityCard({
 
       <div className="flex-1 min-w-0">
         <div className="font-body-md text-body-md font-semibold text-on-background truncate">
-          {name}
+          {displayName}
         </div>
         {aliases && aliases.length > 0 && (
           <div className="font-label-mono text-label-mono text-on-surface-variant truncate">

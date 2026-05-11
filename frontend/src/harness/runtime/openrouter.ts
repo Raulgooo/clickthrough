@@ -5,7 +5,7 @@ import { validateGeneratedUi } from "./validateUi";
 import { providerFetch } from "./providerFetch";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "google/gemini-2.0-flash";
+const DEFAULT_MODEL = "nousresearch/hermes-3-llama-3.1-405b:free";
 
 function getApiKey(): string {
   const key = import.meta.env.VITE_OPENROUTER_API_KEY;
@@ -28,7 +28,7 @@ async function llmGenerate(
   const url = `${OPENROUTER_BASE}/chat/completions`;
 
   // Build user message content — text only, or text + image multimodal
-  const userContent = imageDataUrl
+  const userContent = imageDataUrl && modelSupportsImages(model)
     ? [
         { type: "text", text: userPrompt },
         { type: "image_url", image_url: { url: imageDataUrl } },
@@ -49,7 +49,7 @@ async function llmGenerate(
     body.response_format = { type: "json_object" };
   }
 
-  const res = await providerFetch(url, {
+  const fetchCompletion = (requestBody: Record<string, unknown>) => providerFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -57,8 +57,18 @@ async function llmGenerate(
       "HTTP-Referer": window.location.origin,
       "X-Title": "Clickthrough",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(requestBody),
   });
+
+  let res = await fetchCompletion(body);
+
+  if (!res.ok && jsonMode) {
+    const firstError = await res.text();
+    console.warn("[OpenRouter] JSON mode failed, retrying without response_format:", firstError);
+    const retryBody = { ...body };
+    delete retryBody.response_format;
+    res = await fetchCompletion(retryBody);
+  }
 
   if (!res.ok) {
     const err = await res.text();
@@ -69,6 +79,17 @@ async function llmGenerate(
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error("OpenRouter returned empty response");
   return text;
+}
+
+export function modelSupportsImages(model: string): boolean {
+  const normalized = model.toLowerCase();
+  return (
+    normalized.includes("gpt-4o") ||
+    normalized.includes("gpt-4.1") ||
+    normalized.includes("gemini") ||
+    normalized.includes("claude-3") ||
+    normalized.includes("vision")
+  );
 }
 
 // ── Robust JSON Extraction ──
@@ -267,6 +288,7 @@ Output exact JSON schema:
 
 Few-shot examples:
 - Page: "X (formerly Twitter)" | User: "Is this true?" → {"family":"verify","confidence":0.95,"target":"claim","needsWebSearch":true,"needsDomActions":false,"needsApproval":false,"riskLevel":"low"}
+- Page: "Raul R. Gonzalez (@raulgcc1) / X" | User: "investigate who is this guy?" → {"family":"understand","confidence":0.9,"target":"page","needsWebSearch":true,"needsDomActions":false,"needsApproval":false,"riskLevel":"low"}
 - Page: "OAuth 2.0 and PKCE - IETF" | User: "Explain this visually" → {"family":"understand","confidence":0.96,"target":"selection","needsWebSearch":false,"needsDomActions":false,"needsApproval":false,"riskLevel":"low"}
 - Page: "Messages" | User: "What do I say?" → {"family":"respond","confidence":0.94,"target":"message","needsWebSearch":false,"needsDomActions":false,"needsApproval":false,"riskLevel":"medium"}
 - Page: "AWS Console" | User: "Create an API key" → {"family":"act","confidence":0.88,"target":"workflow","needsWebSearch":false,"needsDomActions":true,"needsApproval":true,"riskLevel":"high"}
@@ -306,11 +328,13 @@ Output JSON only.`;
   }
 }
 
-function heuristicClassify(prompt: string, page?: PageContextPacket): IntentClassification {
+export function heuristicClassify(prompt: string, page?: PageContextPacket): IntentClassification {
   const p = prompt.toLowerCase();
   const selectedOrVisible = `${page?.selectedText || ""} ${page?.visibleText || ""}`.toLowerCase();
   if (isComparisonIntent(prompt))
     return { family: "summarize", confidence: 0.82, target: "page", needsWebSearch: true, needsDomActions: false, needsApproval: false, riskLevel: "low" };
+  if (isIdentityInvestigationIntent(prompt, page))
+    return { family: "understand", confidence: 0.76, target: "page", needsWebSearch: true, needsDomActions: false, needsApproval: false, riskLevel: "low" };
   if (p.includes("true") || p.includes("verify") || p.includes("fake") || p.includes("real") || p.includes("source"))
     return { family: "verify", confidence: 0.7, target: "claim", needsWebSearch: true, needsDomActions: false, needsApproval: false, riskLevel: "low" };
   if (p.includes("reply") || p.includes("say") || p.includes("respond") || p.includes("draft") || p.includes("what do i say"))
@@ -329,6 +353,18 @@ function heuristicClassify(prompt: string, page?: PageContextPacket): IntentClas
 function isComparisonIntent(prompt: string): boolean {
   const p = prompt.toLowerCase();
   return /\b(compare|versus|vs\.?|which|better|should i buy)\b/.test(p) || /\bthis\b.+\bor\b.+\?*$/.test(p);
+}
+
+function isIdentityInvestigationIntent(prompt: string, page?: PageContextPacket): boolean {
+  const p = prompt.toLowerCase();
+  const pageText = `${page?.title || ""} ${page?.url || ""} ${page?.visibleText || ""}`.toLowerCase();
+  const asksAboutPerson =
+    /\b(who is|who's|who are|who am i looking at|who is this (guy|person|account|profile|user))\b/.test(p) ||
+    /\b(investigate|lookup|look up|research|background|profile)\b/.test(p);
+  const socialContext =
+    /\b(x\.com|twitter\.com|linkedin\.com|github\.com|instagram\.com|tiktok\.com|profile|@\w+)/.test(pageText);
+
+  return asksAboutPerson && socialContext;
 }
 
 // ── UI Tree Generation ──

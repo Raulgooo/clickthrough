@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:validate-ui": "node scripts/run-validate-ui-regression.mjs",
+    "test:classification": "node scripts/run-classification-regression.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
