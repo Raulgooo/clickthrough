@@ -6,19 +6,23 @@ product
 
 ## Users
 
-Clickthrough is for anyone using a browser who hits uncertainty, confusion, or workflow friction on the current page.
+Clickthrough is for anyone using a computer who hits uncertainty, confusion, or workflow friction in the current app, page, document, or desktop surface.
 
 The first demo audience is engineers, builders, and power users who live in complex web tools, verify information, read technical material, and move across dashboards all day. The broader product should still feel accessible to non-technical people who simply want the web to respond to intent instead of forcing navigation.
 
-Users arrive mid-flow. They are reading, comparing, learning, replying, or trying to get something done. They do not want to leave the page, open another assistant, or learn a new app.
+Users arrive mid-flow. They are reading, comparing, learning, replying, designing, debugging, editing, or trying to get something done. They do not want to leave the current surface, open another assistant, or learn a new app.
 
 ## Product Purpose
 
-Clickthrough is a runtime interface layer for the web. It observes the current browser context, understands the user's intent, and generates the exact overlay UI needed to verify, understand, act, or respond.
+Clickthrough is a runtime interface layer for the computer. It observes the current browser or OS context, understands the user's point of intent, and generates the exact overlay UI needed to verify, understand, navigate, compose, decide, or act.
 
-It exists to replace navigation friction with generated, page-aware interfaces. Instead of explaining what to click, Clickthrough creates the missing control surface on top of the current page, asks approval when needed, acts through browser tools, and verifies the result.
+It exists to replace navigation friction with generated, context-aware interfaces. Instead of explaining what to click, Clickthrough creates the missing control surface on top of the current page, app, document, image, video frame, or workflow.
 
-Success looks like the browser briefly becoming intent-native: the user asks a question or states a goal, and the page reshapes into the interface that should have existed.
+Clickthrough should be proactive by default and action-capable by permission. It may observe, explain, verify, summarize, draft, highlight, and prepare next steps without taking over. Browser mutation, credential creation, posting, deleting, buying, and permission changes require explicit approval, verified targets, and result verification.
+
+Success looks like the computer briefly becoming intent-native: CT appears near the cursor, selection, hover target, or focused control, then expands into the interface that should have existed.
+
+The browser is the first runtime. The deeper product thesis is that the pointer becomes an intent surface across the OS.
 
 ## Brand Personality
 
@@ -40,6 +44,9 @@ Clickthrough should not look or feel like:
 - a repeated card grid
 - an "AI wrapper" around search results
 - a separate app that pulls the user away from the current page
+- an always-on desktop surveillance assistant
+- an animated mascot that interrupts globally
+- a raw computer-control agent without visible permission boundaries
 
 Avoid designs where the same panel appears on every site. The core product promise is that UI changes shape based on page context and user intent.
 
@@ -48,6 +55,10 @@ Avoid designs where the same panel appears on every site. The core product promi
 ### Stay On The Page
 
 Clickthrough should never make the user leave the current context unless the task explicitly requires it. The overlay appears where the user's attention already is.
+
+### Follow Intent Across Surfaces
+
+The pointer, selection, focus, active window, screenshot region, and recent user action are all intent signals. Clickthrough should follow those anchors across browser pages first and OS surfaces next, scoped by permission and user engagement.
 
 ### Generate The Missing Interface
 
@@ -63,7 +74,7 @@ Progress, evidence, tool use, uncertainty, action steps, and verification should
 
 ### Approval Before Impact
 
-Clickthrough may investigate and explain freely, but any external send, account change, credential creation, permission change, or destructive action requires clear user approval.
+Clickthrough may investigate and explain freely. Any external send, account change, credential creation, permission change, or destructive action requires clear user approval and result verification.
 
 ## Accessibility & Inclusion
 
@@ -78,4 +89,3 @@ Target WCAG AA for generated overlays:
 - no reliance on color alone for status, risk, confidence, or verdict
 - screen-reader labels for icon-only actions
 - text alternatives for diagrams and generated visual explainers
-

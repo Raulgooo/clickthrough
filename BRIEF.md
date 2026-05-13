@@ -2,17 +2,19 @@
 
 ## What We Are Building
 
-Clickthrough is a browser-native intent agent.
+Clickthrough is a browser-native intent agent evolving into an OS-level AI pointer companion.
 
-The user stays on the current page, invokes CT, and states intent. Clickthrough observes the page, understands the task, and generates the exact overlay UI needed to verify, explain, navigate, compose, or decide without making the user leave the page.
+The user stays on the current page or app, invokes CT or accepts a proactive hint, and states intent. Clickthrough observes the active context, understands the task, and generates the exact overlay UI needed to verify, explain, navigate, compose, decide, or act without making the user leave the surface.
 
 This is not a chatbot, sidebar, or separate assistant app. The generated interface is the product.
 
-Clickthrough should feel like a natural expansion of the cursor: summoned at the point of intent, anchored to the thing the user is looking at, spatially lightweight until more room is needed, and always easy to dismiss or refine without breaking flow.
+Clickthrough should feel like a natural expansion of the pointer: summoned at the point of intent, anchored to the thing the user is looking at, spatially lightweight until more room is needed, and always easy to dismiss or refine without breaking flow.
 
-Hackathon scope update: the live MVP is read-only. It may search, fetch, explain, summarize, compare, prepare drafts, highlight page regions, and suggest safe next steps. It must not create credentials, submit forms, click through workflows, post content, delete data, buy things, or change account state. Browser action execution and SharkAuth automation remain post-hackathon architecture.
+Current scope update: Clickthrough is no longer hackathon-limited. It should be proactive and action-capable, but permissioned. It may search, fetch, explain, summarize, compare, prepare drafts, highlight regions, and suggest safe next steps by default. Browser and OS actions, credential creation, posting, deleting, buying, permission changes, and account mutation require explicit approval, verified targets, and result verification.
 
-## Hackathon Goal
+The strategic horizon is AI Pointer / Clicky-class behavior: CT lives beside the cursor, sees the active screen when permitted, understands "this" and "that," speaks or renders the next useful interface, and can spin up bounded background work through the `mi`-style harness.
+
+## Product Goal
 
 Win by showing working code that clearly proves:
 
@@ -49,18 +51,19 @@ The demo should land in these tracks:
 
 ## Architecture Direction
 
-We are building a **Claude Code-style harness**, not a normal HTTP app first.
+We are rebuilding around a **full MI harness port**, not a normal HTTP app first and not the current one-shot frontend pipeline.
 
 The harness should behave like a long-lived runtime session:
 
 ```txt
-page context + user intent
-  -> harness state machine
-  -> typed tool calls
-  -> generated primitive UI patches
-  -> read-only evidence/extraction/fetch tools
+screen/page signals + user intent/proactive insight
+  -> MI model/tool loop
+  -> policy broker
+  -> typed browser/OS/web/browser-worker tools through execution chambers
+  -> generated surface plan
+  -> validated primitive UI patches
   -> grounded verification and UI state
-  -> streamed events back to overlay
+  -> streamed events back to dynamic mouse buddy
 ```
 
 First implementation should use an in-process TypeScript runtime with async events:
@@ -71,15 +74,30 @@ for await (const event of session.events()) {
 }
 ```
 
-No HTTP server is required for the first milestone. WebSocket/SSE can come later only if we need a separate process, extension background worker, or remote service.
+No HTTP server or browser extension container is required for the first milestone. Ship as a lightweight Wails desktop app. WebSocket/SSE can come later only if we need a separate process, browser connector, or remote service.
+
+`mi/` is the harness runtime to port:
+
+- model sees tool schemas
+- model requests tools
+- harness executes allowed tools
+- tool results feed the next model turn
+- loop continues until completion
+- skill/prompt modules load per task
+- delegation and goal/check loops remain first-class
+
+Clickthrough patches MI with browser-safe tools, typed events, primitive UI validation, execution chambers, and capability policy. The current frontend harness is not the base runtime; salvage only its useful page context, primitive, renderer, and validation ideas.
 
 ## Tech Stack
 
 - Vite
 - React
 - TypeScript
+- Wails desktop shell
+- Go native control plane for tray, global hotkeys, overlay windows, OS adapters, process supervision, cancellation, budgets, and panic stop
 - Tailwind/CSS variables
-- TypeScript harness runtime
+- TypeScript runtime built by porting MI's loop/tool/skill/delegation shape
+- Obscura/CDP browser-worker chamber for isolated agent browsing, rendered fetch, extraction, screenshots, and replay checks
 - Vitest for harness/unit tests
 - Playwright for browser/integration tests
 - Exa as MVP web search/content provider behind generic `web.search` and `web.fetch` contracts
@@ -87,7 +105,8 @@ No HTTP server is required for the first milestone. WebSocket/SSE can come later
 - AG-UI-style event stream for visible runtime generation
 - MCP Apps as tool/app discovery framing
 - Clickthrough primitive schema from `UI_PRIMITIVES.md`
-- Lightweight page perception bridge for URL/title/selection/visible text/anchors/host theme
+- Lightweight page/browser connector for URL/title/selection/visible text/anchors/host theme when browser context is available
+- Future OS companion adapter for active app/window, screenshot crop, accessibility/OCR regions, and pointer telemetry
 
 Optional only if useful:
 
@@ -95,7 +114,8 @@ Optional only if useful:
 - CopilotKit for hotkey/approval/event wiring, but never as visible chat UI
 - WebSocket/SSE transport after the in-process harness works
 - SearXNG, Brave Search, or Scrapling later if Exa cost, limits, or coverage become blockers
-- Browser action execution and SharkAuth automation after the read-only copilot demo lands
+- Browser action execution through approval-gated capability tools
+- OS action execution through approval-gated capability tools after the browser loop and screen broker are stable
 
 ## Product Rules
 
@@ -103,12 +123,13 @@ Optional only if useful:
 - Do not hardcode final demo UI trees.
 - Do not create runtime scenario profiles.
 - Demo repeatability belongs in tests, fixtures, and reset controls, not fake harness output.
-- The harness must start from page context, prompt, available tools, and primitive manifest.
-- The MVP must stay read-only. Any mutating action plan is deferred or converted into user-facing guidance.
+- The harness must start from screen/page signals, prompt or proactive insight, available tools, and primitive manifest.
+- Default behavior is observe/prepare first. Any mutating action must be routed through approval-gated capability tools.
 - No factual claim without source grounding, uncertainty, or an explicit "not verified" state.
 - Generated UI must use validated primitives, not arbitrary HTML.
 - The model should emit declarative UI plus styling intent, not raw styling. Renderer-owned primitives, host tokens, and design skills turn that intent into accurate, useful, beautiful interfaces.
-- CT should feel pointer-native: overlays originate from selection, cursor, focused element, or active page region whenever possible.
+- CT should feel pointer-native: overlays originate from selection, cursor, hover target, focused element, screenshot crop, or active region whenever possible.
+- Do not let OS ambition weaken the interaction doctrine: no chat window, no global surveillance, no raw computer control, no hidden action.
 
 Declarative UI fit:
 
@@ -155,12 +176,12 @@ Work:
 - host theme sampling
 - anchor highlights and overlay placement metadata
 - demo page context fixtures for verify, understand, assist, and respond scenes
-- explicit deferral notes for action execution and SharkAuth automation
+- explicit notes for approval-gated action execution
 
 Primary files:
 
 - `frontend/src/browser/`
-- future extension/content bridge if needed
+- future browser connector/content bridge if needed
 
 ### User C: Overlay Stream Renderer
 
@@ -214,13 +235,13 @@ Primary files:
 5. Make the renderer consume events and apply primitive patches.
 6. Wire one vertical slice end to end.
 7. Expand to all four demo intents.
-8. Add the Jarvis-like assist/navigate scene in place of SharkAuth execution.
+8. Add the Jarvis-like assist/navigate scene as the third demo flow.
 9. Run build and browser checks.
 10. Record a 2-4 minute demo with working code only.
 
-## Web Search MVP
+## Web Search
 
-Use Exa for the MVP/hackathon search path. It is easy to integrate, built for agent workflows, and its free tier should be enough if we cap calls and cache demo queries.
+Use Exa as the default search path. It is easy to integrate and built for agent workflows. Keep the provider boundary generic so we can swap or add providers later.
 
 Tool boundary:
 
@@ -242,7 +263,7 @@ GroundedWebSource {
 
 Provider plan:
 
-- Default MVP provider: Exa Search API.
+- Default provider: Exa Search API.
 - Search evidence mode: use `contents.highlights` for token-efficient snippets.
 - Visual evidence mode: normalize Exa `image`, `favicon`, and `contents.extras.imageLinks` into `imageUrl`, `faviconUrl`, and `media[]` for GenUI primitives.
 - Known URL mode: use Exa Contents API or direct browser/readability fallback.
@@ -261,7 +282,7 @@ Renderer plan:
 
 Testing plan:
 
-- Vitest owns harness, provider normalization, schema validation, read-only tool policy, and web evidence contract fixtures.
+- Vitest owns harness, provider normalization, schema validation, capability policy, and web evidence contract fixtures.
 - Playwright owns visible overlay behavior, event streaming, host anchoring, responsive fit, and source image/fallback rendering.
 
 ## Key References

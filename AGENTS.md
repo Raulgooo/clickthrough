@@ -2,11 +2,13 @@
 
 ## Product North Star
 
-Clickthrough is a runtime interface layer for the web.
+Clickthrough is a runtime interface layer for the computer, starting in the browser.
 
-It observes the current browser context, understands the user's intent, and generates the exact overlay UI needed to verify, understand, navigate, compose, or respond without making the user leave the page.
+It observes the current browser or OS context, understands the user's point of intent, and generates the exact overlay UI needed to verify, understand, navigate, compose, respond, or act without making the user leave the current surface.
 
-Do not treat Clickthrough as a chatbot, sidebar, or separate assistant app. The product is the generated interface itself.
+Do not treat Clickthrough as a chatbot, sidebar, desktop mascot, or separate assistant app. The product is the generated interface itself.
+
+Strategic horizon: Clickthrough should become an AI pointer companion. It lives beside the cursor, understands "this" and "that" through pointer/selection/focus/screenshot context, and expands into the exact generated surface needed. Browser comes first; OS-level adapters follow the same doctrine.
 
 ## Hackathon Frame
 
@@ -73,18 +75,61 @@ The harness should make weaker models useful and stronger models excellent throu
 
 Use `STACK.md` as the source of truth for stack decisions.
 
-Current preferred hackathon stack:
+Current preferred stack:
 
-- Vite + React + TypeScript.
-- React overlay renderer injected into the active page.
+- Wails desktop shell with Go native control plane.
+- React + TypeScript overlay UI.
+- Transparent desktop overlay windows, tray, global hotkeys, push-to-talk, and OS adapters.
+- Active app/window metadata, screenshot crops, accessibility/OCR regions, and pointer telemetry.
 - AG-UI for runtime event streaming.
 - Clickthrough primitive schema from `UI_PRIMITIVES.md`.
 - Lightweight page perception bridge as a first-class subsystem.
 - MCP Apps where useful, but browser tools are likely more important for the demo.
 - CopilotKit only if it accelerates hotkey, state, callbacks, or approval flow without turning the product into chat.
-- TypeScript harness for agent orchestration, web search, tool calls, schema validation, UI planning, verification, and bounded memory. Full backend transport is post-MVP.
+- TypeScript runtime built by porting MI's loop/tool/skill/delegation shape, then patching execution through Clickthrough policy gates. Full backend transport is optional.
+- Obscura/CDP browser-worker chamber for isolated agent browsing, rendered fetch, extraction, screenshots, and replay checks.
 - Variable overlay modes: inline prompt, anchored popover, side panel, spotlight, fullscreen workbench, and native insertion.
-- SharkAuth/browser action execution is deferred until after the hackathon.
+- Browser integration is an optional connector/context provider, not the product container.
+- Browser and OS action execution is available only through approval-gated capability tools with verified targets.
+
+### Current Harness Direction
+
+Use `mi/` as the harness runtime to port fully. Patch execution afterward; do not preserve the current frontend harness as a competing orchestrator.
+
+Port:
+
+- simple model/tool loop
+- tool schemas visible to the model
+- tool results fed into the next turn
+- skill-style prompt modules
+- bounded delegation
+- goal/check validation loops
+- tool call accumulation and repeated execution
+
+Salvage from the current frontend harness:
+
+- page perception tools
+- context packet shapes
+- primitive renderer contracts
+- host adaptation ideas
+- viewport fit/validation helpers
+
+Patch for Clickthrough:
+
+- no raw shell tool in the browser or OS runtime
+- no arbitrary DOM/screen mutation tool
+- typed structured tool results instead of raw strings
+- AG-UI-style typed event stream
+- validated Clickthrough primitive trees
+- AI pointer / dynamic mouse buddy interaction layer
+- proactive insight chips that require user engagement before model/tool work
+- execution chambers for page, screen, Obscura browser-worker, terminal, OS, web, and memory
+
+### Obscura Browser Worker
+
+Use Obscura as the agent's isolated browser chamber, not as the user's live browser context.
+
+Use it for rendered fetch, source checking, text/link extraction, screenshots, read-only DOM eval, and replay checks. Do not use it to replace active-tab context, silently import logged-in user state, or bypass site/account boundaries.
 
 ### Runtime UI Protocol
 
@@ -143,7 +188,7 @@ If it gives us useful conventions quickly, map Clickthrough primitives onto it. 
 
 ## Browser Layer
 
-Clickthrough should behave like a browser extension or extension-like injected overlay.
+Clickthrough should ship as a lightweight desktop OS companion. Browser integration is a provider, not the shell.
 
 Required capabilities:
 
@@ -152,13 +197,25 @@ Required capabilities:
 - inspect lightweight page affordances for context and anchoring
 - anchor overlays to page elements
 - preserve page position
-- render generated UI without navigating away
-- prepare safe next steps, drafts, explanations, or evidence without mutating the page during the hackathon MVP
-
-Deferred post-hackathon capabilities:
-
-- execute approved actions against the current page
+- render generated UI in desktop overlay windows without navigating away
+- prepare safe next steps, drafts, explanations, or evidence
+- execute approved actions against verified current-page targets
 - verify mutating browser action results
+
+## Future OS Layer
+
+Clickthrough may extend beyond browser tabs through an OS companion adapter.
+
+Required constraints:
+
+- explicit user permission for screen capture and app control
+- local screenshot redaction before model calls
+- active-window or cropped-region context by default, not continuous full-screen upload
+- accessibility tree and app metadata preferred before pixels
+- pointer-following behavior that snaps to intent anchors and avoids occlusion
+- global pause/cancel/panic control before any OS action executor ships
+- action receipts and before/after verification for every mutating action
+- no raw shell, arbitrary JS eval, raw coordinate control, or unverified mutation exposed to the model
 
 ## Host Style Adaptation
 
@@ -177,8 +234,8 @@ But Clickthrough-controlled trust boundaries must remain visibly distinct from h
 
 ## Safety Rules
 
-- Hackathon MVP is read-only: do not execute page mutations, credential creation, posting, deleting, buying, or permission changes.
-- Post-MVP action execution must never run page actions without approval.
+- Do not execute page mutations, credential creation, posting, deleting, buying, or permission changes without explicit approval, verified targets, and visible risk.
+- Raw browser mutation must never be exposed directly to the model; only scoped capability tools may act.
 - Always show risk for destructive, permission-changing, external, or sensitive recommendations.
 - Always expose uncertainty for verification.
 - Avoid claiming medical, legal, or financial certainty.

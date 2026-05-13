@@ -1,869 +1,438 @@
-# Clickthrough Harness Spec
+# Clickthrough Harness
 
-## Hackathon Scope Update
+## North Star
 
-The live MVP harness is read-only. It observes page context, runs read-only tools, streams generated UI, grounds web facts, and prepares user-facing outputs. It must block or defer any request that would click, fill, submit, post, create credentials, change permissions, purchase, delete, or otherwise mutate the page/account.
+Clickthrough needs a full port of the `mi` harness as its runtime spine.
 
-Action execution, approval-to-mutation, SharkAuth automation, and post-action verification remain documented as post-hackathon architecture, not the current implementation target.
-
-## Purpose
-
-Clickthrough needs a strong browser-agent harness, not a fragile prompt loop.
-
-The harness should make any model useful by controlling:
-
-- page context
-- memory
-- tool execution
-- generated UI schema
-- permissions
-- user approval
-- read-only tool execution
-- grounded verification
-- post-MVP browser actions
-- streaming overlay state
-
-The model proposes. The harness validates, routes, gates, executes read-only tools, and verifies grounded outputs. Post-MVP mutation uses the same policy boundary.
-
-## Clean-Room Lessons Applied
-
-The useful pattern from strong agent harnesses is simple:
-
-1. Keep the loop tool-result driven.
-2. Send compact structured context, not raw dumps.
-3. Load tool schemas only when needed.
-4. Run read-only tools in parallel.
-5. Defer mutating tools in the hackathon MVP; run them sequentially only post-MVP.
-6. Enforce permissions outside the model.
-7. Validate generated UI before rendering.
-8. Compact memory deliberately.
-9. Let users interrupt or redirect.
-10. End every grounded claim or post-MVP action with verification.
-
-Everything below is specific to Clickthrough.
-
-## Top-Level Architecture
+`mi` is powerful because its core is simple:
 
 ```txt
-Browser Extension / Overlay
-  -> captures intent, selection, page context, DOM scan, host style
-  -> streams events from backend
-  -> renders variable GenUI overlays
-  -> executes approved browser actions
-
-Backend Harness
-  -> receives context packets
-  -> recalls memory
-  -> classifies intent
-  -> plans tool/UI/action work
-  -> streams AG-UI events
-  -> runs web/search/PDF/MCP tools
-  -> validates generated UI trees
-  -> requests approval
-  -> verifies results
-  -> writes memory
+messages + tool schemas
+  -> model stream
+  -> tool calls
+  -> execute tools
+  -> append tool results
+  -> repeat
 ```
 
-## Core Loop
+Clickthrough should port that loop completely, then patch its execution layer so terminal, browser, and OS power flow through typed capabilities, policy gates, approvals, and verification.
+
+The current frontend harness is not the base runtime. It is source material only:
+
+- keep its useful page perception functions
+- keep typed context packet ideas
+- keep primitive UI and renderer contracts
+- keep host-theme and viewport-fit lessons
+- discard its one-shot classify/generate flow
+- discard its fixed panel assumptions
+- discard any frontend-only orchestration model
+
+## MI Port Doctrine
+
+Port MI as the harness, then constrain execution.
+
+Required MI behaviors:
+
+- streaming model turn
+- tool call accumulation
+- tool schema loading
+- tool dispatch
+- tool result append
+- repeat-until-done loop
+- skill/prompt module loading
+- delegation pattern
+- goal/check verification loop
+- compact conversation/session state
+
+Clickthrough patches around MI, not instead of MI:
+
+- typed `HarnessEvent` stream
+- structured `ToolResult`
+- permission-tiered tool registry
+- primitive UI planning and validation
+- page/screen context packet adapters
+- action previews, receipts, and panic stop
+- execution chambers for shell, browser, and OS control
+
+## Capability Boundary
+
+Clickthrough is proactive and action-capable, but raw power stays outside the model.
+
+The harness may by default:
+
+- observe page context
+- observe active app/window context
+- capture local screenshots and cropped regions
+- scan DOM summaries
+- track cursor, hover, focus, selection, and viewport
+- score proactive insights
+- search and fetch web sources
+- highlight page regions
+- annotate screen regions
+- generate validated UI primitives
+- draft and prepare next steps
+- disclose uncertainty and source quality
+
+The harness may after explicit approval and target verification:
+
+- click, fill, and submit verified DOM targets
+- click, type, scroll, drag, and hotkey verified OS targets
+- send user-approved drafts
+- create credentials through verified workflows
+- change permissions with elevated confirmation
+- prepare purchases or destructive actions with explicit confirmation
+
+The model must not directly:
+
+- run shell commands
+- execute arbitrary JavaScript
+- render arbitrary HTML/CSS
+- mutate unverified DOM targets
+- control raw screen coordinates without verified targets
+- use unscoped network tools
+- silently send private page content to model/tool providers when context is sensitive
+
+The model requests capabilities. The harness scopes, approves, executes, and verifies.
+
+## Harness Loop
 
 ```txt
-Receive intent
-Build page context
-Recall memory
-Classify intent and risk
-Plan work
-Generate initial UI skeleton
-Run tools
-Patch generated UI
-Ask approval if needed
-Execute approved browser actions
-Verify result
-Remember useful facts
-Finish with typed result
+input event
+  -> build page/screen context packet
+  -> MI model turn
+  -> accumulate MI tool calls
+  -> policy broker maps tool calls to execution chambers
+  -> execute allowed tools
+  -> append structured tool results to MI conversation
+  -> repeat until goal/check passes or budget stops
+  -> surface plan
+  -> primitive tree
+  -> validate and fit-check
+  -> stream UI
+  -> result
 ```
 
-## Intent Families
+This is a real loop. The model can request multiple tools and replan from results. The harness owns budgets, tool policy, validation, and fallback.
 
-```ts
-export type IntentFamily =
-  | "verify"
-  | "understand"
-  | "act"
-  | "respond"
-  | "navigate"
-  | "summarize"
-  | "unknown";
+## Execution Chambers
+
+Powerful execution is allowed, but only inside chambers with explicit contracts.
+
+```txt
+MI tool request
+  -> PolicyBroker
+  -> CapabilityResolver
+  -> ExecutionChamber
+  -> StructuredResult
+  -> VerificationCheck
 ```
 
-Harness rules:
+Chambers:
 
-- `verify` must expose evidence, source quality, and uncertainty.
-- `understand` should prefer diagrams and interactive explanations over paragraphs.
-- `act` requires DOM capability mapping and approval for sensitive actions.
-- `respond` must stay private until the user approves sending/posting.
-- `unknown` should render a clarification UI, not guess.
+- `page`: active-tab read-only perception and approved DOM actions.
+- `screen`: screenshot crop, OCR, accessibility, app/window metadata.
+- `browser-worker`: isolated Obscura/Playwright/CDP browser worker.
+- `terminal`: approved sandboxed commands only.
+- `os`: verified computer-use actions with visible session controls.
+- `web`: search/fetch/source tools.
+- `memory`: bounded session/project memory.
 
-## State Machine
+Each chamber declares:
 
-```ts
-export type HarnessState =
-  | "idle"
-  | "receiving_intent"
-  | "observing_page"
-  | "recalling_memory"
-  | "classifying_intent"
-  | "planning"
-  | "generating_ui"
-  | "running_tools"
-  | "waiting_for_user"
-  | "awaiting_approval"
-  | "executing_actions"
-  | "verifying"
-  | "remembering"
-  | "completed"
-  | "cancelled"
-  | "failed";
+- allowed tools
+- required permission tier
+- working directory or domain bounds
+- time/action/token budgets
+- redaction requirements
+- approval requirements
+- postcondition checks
+
+## Obscura Browser Worker Strategy
+
+Use Obscura as the reference for isolated browser execution. It provides a lightweight Rust headless browser engine with V8 JavaScript, Chrome DevTools Protocol support, Playwright/Puppeteer compatibility, worker-style scraping, network/cookie handling, input dispatch, and optional stealth/tracker blocking.
+
+Clickthrough should use this pattern for browser workers:
+
+- run investigation, scraping, source fetch, and reproducible browser checks outside the user's live tab
+- expose CDP/Playwright-compatible tools to MI through `browser-worker.*`
+- isolate cookies, storage, proxy, user agent, and network policy per worker/session
+- apply navigation, domain, action, and data budgets before execution
+- keep stealth/anti-detect behavior opt-in and never use it to bypass user, site, legal, or account boundaries
+- never let untrusted page text request worker escalation directly
+
+Candidate worker tools:
+
+```txt
+browserWorker.open
+browserWorker.fetchRendered
+browserWorker.extractText
+browserWorker.extractLinks
+browserWorker.screenshot
+browserWorker.evalReadOnly
+browserWorker.locateElement
+browserWorker.replayCheck
+browserWorker.close
 ```
 
-Every state transition should stream to the overlay.
+Mutating worker actions, if added, require the same action preview and verification receipt rules as active browser/OS actions.
 
-```ts
-export type HarnessEvent =
-  | { type: "state.changed"; state: HarnessState; message?: string }
-  | { type: "ui.patch"; patch: UiPatch }
-  | { type: "tool.started"; call: ToolCallSummary }
-  | { type: "tool.finished"; result: ToolResultSummary }
-  | { type: "approval.requested"; request: ApprovalRequest }
-  | { type: "approval.resolved"; decision: ApprovalDecision }
-  | { type: "result"; result: HarnessResult };
-```
+## Activation Boundaries
 
-## Run Budgets
+Clickthrough may observe local signals continuously, but richer context leaves the local bridge only after an explicit activation boundary:
 
-Every run needs limits so demos do not hang.
-
-```ts
-export type RunBudget = {
-  maxModelTurns: number;
-  maxToolCalls: number;
-  maxWallClockMs: number;
-  maxCostUsd?: number;
-};
-
-export const DEFAULT_BUDGETS: Record<IntentFamily, RunBudget> = {
-  verify: { maxModelTurns: 8, maxToolCalls: 16, maxWallClockMs: 45_000 },
-  understand: { maxModelTurns: 6, maxToolCalls: 8, maxWallClockMs: 30_000 },
-  act: { maxModelTurns: 10, maxToolCalls: 20, maxWallClockMs: 60_000 },
-  respond: { maxModelTurns: 5, maxToolCalls: 6, maxWallClockMs: 20_000 },
-  navigate: { maxModelTurns: 5, maxToolCalls: 10, maxWallClockMs: 25_000 },
-  summarize: { maxModelTurns: 4, maxToolCalls: 6, maxWallClockMs: 20_000 },
-  unknown: { maxModelTurns: 3, maxToolCalls: 4, maxWallClockMs: 15_000 }
-};
-```
-
-Typed stop reasons:
-
-```ts
-export type HarnessStopReason =
-  | "success"
-  | "cancelled_by_user"
-  | "max_turns"
-  | "max_tool_calls"
-  | "max_wall_clock"
-  | "max_cost"
-  | "tool_error"
-  | "schema_validation_failed"
-  | "approval_denied"
-  | "verification_failed";
-```
-
-## Context Packets
-
-Never send raw DOM to the model.
-
-```ts
-export type HarnessContext = {
-  runId: string;
-  sessionId: string;
-  userIntent: UserIntentPacket;
-  page: PageContextPacket;
-  memory: MemorySlice;
-  availableTools: ToolManifestSummary[];
-  availablePrimitives: PrimitiveManifestSummary[];
-  constraints: HarnessConstraints;
-};
-```
-
-`PageContextPacket` should include:
-
-- URL and title
+- hotkey invocation
+- push-to-talk
 - selected text
-- visible text summary
-- focused element
-- nearby element summaries
-- capability map
-- host theme summary
-- risk hints from the page
+- pointer buddy grab
+- direct click on a CT hint
+- accepted proactive chip
+- approved background-agent start
 
-## Memory
+Passive cursor, hover, focus, dwell, and local page/app signals are used for placement and scoring. They are not consent to upload screenshots, microphone input, private page text, or OS context.
 
-Start with a small memory system.
+Every capture event must be visible to the user. The renderer should show whether CT is listening, reading the page, capturing a screenshot crop, using accessibility metadata, or running a background task.
 
-### Active Run
+## OS Companion Pipeline
 
-Holds current:
+OS-level screen context flows through a privacy and policy pipeline:
 
-- goal
-- classification
-- plan
-- tool results
-- generated UI tree
-- approval state
-- verification evidence
-
-### Session Memory
-
-Bounded to the active browser session:
-
-- last 20 turns
-- recent tool summaries
-- current page state
-- unresolved questions
-
-### Site Memory
-
-Scoped to origin/app:
-
-- known workflows
-- successful action paths
-- app-specific warnings
-- style preferences learned from the host
-
-### User Memory
-
-Cross-site preferences:
-
-- explanation style
-- source preferences
-- tone preferences
-- approval strictness
-
-## Compaction
-
-When memory grows, compact into:
-
-```ts
-export type CompactedSession = {
-  currentGoal: string;
-  activePage: string;
-  decisions: string[];
-  constraints: string[];
-  toolFindings: string[];
-  generatedUiState: string;
-  approvalState?: string;
-  verificationState?: string;
-  openQuestions: string[];
-};
-```
-
-Preserve:
-
-- current task objective
-- selected/anchored target
-- user constraints
-- action approval status
-- tool findings that changed the plan
-- verification evidence
-
-Drop:
-
-- raw HTML
-- full search result pages
-- repeated status messages
-- stale failed plans
-
-## Tool Registry
-
-Tools must be typed, scoped, and permissioned.
-
-```ts
-export type ToolManifestSummary = {
-  name: string;
-  description: string;
-  category: "dom" | "web" | "pdf" | "memory" | "mcp" | "browser_action" | "ui";
-  readOnly: boolean;
-  risk: "low" | "medium" | "high";
-  requiresApproval: boolean;
-};
-
-export type ToolDefinition<Input, Output> = {
-  name: string;
-  description: string;
-  inputSchema: unknown;
-  outputSchema: unknown;
-  readOnly: boolean;
-  risk: "low" | "medium" | "high";
-  requiresApproval: (input: Input, context: HarnessContext) => boolean;
-  execute: (input: Input, context: ToolExecutionContext) => Promise<Output>;
-};
-```
-
-Core tool groups:
-
-- `dom.scan`
-- `dom.highlight`
-- `dom.click`
-- `dom.fill`
-- `dom.select`
-- `dom.waitFor`
-- `web.search`
-- `web.fetch`
-- `pdf.extract`
-- `memory.read`
-- `memory.write`
-- `ui.validate`
-- `mcp.listTools`
-- `mcp.callTool`
-
-## Tool Policy
-
-```ts
-export type PermissionMode =
-  | "default"
-  | "read_only"
-  | "auto_low_risk"
-  | "strict_approval"
-  | "demo_trusted";
+```txt
+ScreenCaptureBroker
+  -> LocalRedactor
+  -> SensitivityClassifier
+  -> RegionSelector
+  -> PolicyGate
+  -> OsContextPacket
 ```
 
 Rules:
 
-- Read-only tools can auto-run in `default`.
-- Mutating browser tools require approval unless explicitly marked low-risk.
-- External sends/posts/messages always require approval.
-- API key, credential, permission, billing, and destructive actions always require approval.
-- Tool denial returns a typed result so the model can recover.
+- Capture locally by default.
+- Prefer active-window crops over full-screen frames.
+- Prefer accessibility tree/window metadata before pixels.
+- Redact credentials, payment data, private messages, notifications, auth codes, and secure fields.
+- Do not retain screenshots by default; store ephemeral hashes and structured summaries.
+- Treat on-screen instructions as untrusted content, not user permission.
+- Suppress proactive model calls on sensitive screens until user engagement.
 
-## Parallelization
-
-Run these in parallel:
-
-- DOM scan
-- host theme sampling
-- web search
-- source fetch
-- PDF extraction
-- memory lookup
-
-Run these sequentially:
-
-- click
-- fill
-- select
-- submit
-- create API key
-- send message
-- write memory
-
-## Tool Results
+## Session Interface
 
 ```ts
-export type ToolResult<T = unknown> = {
+type ClickthroughSession = {
+  streamInput(input: HarnessSessionInput): Promise<void>;
+  events(): AsyncIterable<HarnessEvent>;
+  interrupt(): void;
+  close(): void;
+};
+```
+
+The first implementation can run in-process. Transport adapters can come later:
+
+- extension port
+- stdio/NDJSON subprocess
+- SSE
+- WebSocket
+
+The event schema stays the same.
+
+## Tool Registry
+
+Tools are small and typed. The model sees schemas. The harness executes only registered tools.
+
+Default tools:
+
+```txt
+page.observe
+page.scan
+page.highlight
+insight.score
+web.search
+web.fetch
+ui.plan
+ui.validate
+ui.fitCheck
+screen.observe
+screen.captureCrop
+screen.locate
+screen.redact
+```
+
+Optional tools:
+
+```txt
+memory.read
+memory.write
+mcp.listTools
+mcp.callTool
+delegate.specialist
+```
+
+Approval-gated tools:
+
+```txt
+dom.click
+dom.fill
+dom.submit
+external.send
+credential.create
+permission.change
+purchase.prepare
+delete.prepare
+computer.focusApp
+computer.clickTarget
+computer.typeText
+computer.hotkey
+computer.drag
+computer.scroll
+clipboard.writeApproved
+file.applyApprovedBatch
+terminal.runApprovedSandboxed
+```
+
+Blocked raw tools:
+
+```txt
+shell.run
+page.eval
+unscoped.network
+unverified.mutation
+raw.coordinateControl
+```
+
+## Permission Tiers
+
+```txt
+T0 Observe Local       local metadata, no model upload
+T1 Explain             redacted screen context, no action
+T2 Prepare             drafts and plans, user applies
+T3 Assisted Action     approved click/type/scroll in visible session
+T4 Scoped Automation   bounded app/domain/time/action budget
+T5 High-Risk Approval  send/delete/buy/permissions/credentials
+T6 Hand-Off Only       CAPTCHA, final transfer, password/security finalization
+```
+
+Every tool declares its required tier. The policy engine may downgrade, deny, or request approval.
+
+## Tool Result Shape
+
+MI can ingest text summaries, but Clickthrough tool execution must produce structured results first.
+
+```ts
+type ToolResult<T = unknown> = {
   callId: string;
   toolName: string;
   status: "success" | "denied" | "failed" | "timeout";
   output?: T;
+  summaryForModel: string;
+  evidence?: string[];
   error?: {
     code: string;
     message: string;
     recoverable: boolean;
   };
-  summaryForModel: string;
-  evidence?: string[];
 };
 ```
 
-The model should usually receive `summaryForModel`, not raw output.
+The model gets compact summaries. The renderer gets structured data.
 
-Raw outputs can be stored in trace storage and referenced by id.
+## Proactive Insight Engine
 
-## DOM Scanner
+The proactive layer should run before expensive model/tool calls.
 
-The DOM scanner is the most important browser-side subsystem.
+Inputs:
+
+- selected text
+- cursor position
+- hovered element and dwell time
+- focused control
+- visible text summary
+- page type
+- local sensitivity hints
+- affordance map
+
+Outputs:
 
 ```ts
-export type DomScanResult = {
-  page: {
-    url: string;
-    title: string;
-    visibleTextSummary: string;
-    selectedText?: string;
-  };
-  elements: DomElementSummary[];
-  capabilities: PageCapability[];
-  forms: FormSummary[];
-  tables: TableSummary[];
-  dialogs: DialogSummary[];
-  hostTheme: HostThemeSummary;
+type ProactiveInsight = {
+  id: string;
+  confidence: number;
+  kind: "verify" | "understand" | "summarize" | "respond" | "navigate" | "risk";
+  anchor: UIAnchorIntent;
+  title: string;
+  preview: string;
+  suggestedPrompt: string;
+  urgency: "quiet" | "normal" | "important";
 };
 ```
 
-Scanner responsibilities:
-
-- visible text extraction
-- selected text extraction
-- accessible name extraction
-- role and tag detection
-- visible bounding boxes
-- form grouping
-- table/list detection
-- modal/dialog detection
-- nearby context around target elements
-- stable element references for current page state
-- host style sampling
-- capability map generation
-
-Scanner constraints:
-
-- cap element count
-- prioritize visible and interactive elements
-- prioritize selected-region-adjacent elements
-- never send full raw DOM to the model
+Proactive insights render as quiet chips or CT buddy states. They do not open panels or run external tools until the user engages.
 
 ## UI Generation
 
-The model emits Clickthrough primitives, not HTML.
-
-```ts
-export type GeneratedUI = {
-  overlayMode: OverlayMode;
-  root: ClickthroughNode;
-  requiredActions?: UIActionBinding[];
-  safety: UISafetySummary;
-};
-```
-
-Pipeline:
+The harness emits:
 
 ```txt
-Model proposes UI tree
-Schema validation
-Safety validation
-Action binding validation
-Host-theme adaptation
-AG-UI patch stream
-Overlay render
+surface plan
+data model
+primitive tree
+safety summary
 ```
 
-Reject:
+The renderer validates:
 
-- unknown primitive types
-- invalid props
-- missing approval gate for risky action
-- unknown action bindings
-- raw scripts
-- unvalidated HTML
-- medical/legal/financial/security certainty without a guard
+- primitive type exists
+- props are safe
+- actions use allowed ids
+- no raw HTML/CSS/script
+- required trust marker exists
+- viewport placement is safe
 
-Allow at most two repair attempts:
+If validation fails, the harness should repair once, then fall back to deterministic safe UI.
 
-```ts
-export const UI_SCHEMA_MAX_RETRIES = 2;
-```
+## Dynamic Surface Policy
 
-Fallback UI:
+Default to the smallest surface that solves the problem:
 
-- compact explanation
-- retry button
-- visible tool progress
-- safe text-only continuation
+- `inline_prompt`: immediate invocation near point of intent.
+- `anchored_popover`: local explanation, reply, small verification, or next-step suggestion.
+- `spotlight`: claim or selected text needs focus.
+- `side_panel`: evidence-heavy verification, long source trails, or multi-step output.
+- `fullscreen_workbench`: rare complex visual explanation.
 
-## Overlay Modes
+Fixed top-right panels are fallback only.
 
-```ts
-export type OverlayMode =
-  | "inline_prompt"
-  | "anchored_popover"
-  | "side_panel"
-  | "spotlight"
-  | "fullscreen_workbench"
-  | "native_insertion";
-```
+For OS companion mode, add:
 
-Rules:
+- `pointer_chip`: tiny CT mark beside pointer or anchor.
+- `screen_annotation`: boxes/arrows/labels over screenshot regions.
+- `action_preview`: before/after target crop and proposed action.
+- `permission_gate`: tier badge, risks, allow/deny controls.
+- `workbench`: larger space for multi-app or multi-step tasks.
 
-- Use `inline_prompt` for invocation.
-- Use `anchored_popover` for local claims, messages, and short context.
-- Use `side_panel` for evidence dashboards and long-running work.
-- Use `spotlight` to emphasize selected DOM regions.
-- Use `fullscreen_workbench` only for dense diagrams or multi-step explanations.
-- Use `native_insertion` when generated controls should feel like the page grew a missing form.
+## Delegation
 
-## Approval
+Borrow `mi`'s delegation idea, but bound it:
 
-Approval is enforced by the harness.
+- delegate only read-only specialist analysis
+- provide a small prompt and explicit budget
+- return structured output
+- parent session remains responsible for safety and final UI validation
 
-```ts
-export type ApprovalRequest = {
-  id: string;
-  title: string;
-  summary: string;
-  steps: string[];
-  risks: RiskItem[];
-  actionPlanId?: string;
-  approveLabel: string;
-  cancelLabel: string;
-  editableFields?: string[];
-};
+## Goal/Check Loops
 
-export type ApprovalDecision =
-  | { type: "approved"; requestId: string; modifiedInput?: unknown }
-  | { type: "denied"; requestId: string; reason?: string }
-  | { type: "redirected"; requestId: string; instruction: string };
-```
-
-Require approval for:
-
-- external sends/posts/messages
-- account changes
-- permission changes
-- API key or credential creation
-- destructive actions
-- purchases/billing
-- sensitive personal outputs
-
-## Action Execution
-
-Approved action plans execute step by step.
-
-```ts
-export type BrowserActionPlan = {
-  id: string;
-  goal: string;
-  steps: BrowserActionStep[];
-};
-
-export type BrowserActionStep =
-  | { kind: "click"; elementId: string }
-  | { kind: "fill"; elementId: string; value: string }
-  | { kind: "select"; elementId: string; value: string }
-  | { kind: "waitFor"; condition: string; timeoutMs: number }
-  | { kind: "verify"; assertion: string };
-```
-
-Rules:
-
-- Stop on first unexpected failure.
-- Stream every step to `ExecutionLog`.
-- Re-scan DOM after route changes or major UI changes.
-- Do not silently continue after acting on a mismatched element.
-
-## Verification
-
-Every action flow ends with verification.
-
-```ts
-export type VerificationResult = {
-  status: "success" | "failed" | "partial" | "unknown";
-  summary: string;
-  evidence: string[];
-  nextActions?: string[];
-};
-```
-
-Verification sources:
-
-- DOM success state
-- URL or route change
-- visible toast/message
-- table/list row appears
-- field value changed
-- generated API key appears
-- external API response if available
-
-If verification is `unknown`, do not claim success.
-
-## Hooks
-
-Hooks are deterministic code outside the model.
-
-```ts
-export type HarnessHook =
-  | "BeforeRun"
-  | "BeforeModelTurn"
-  | "AfterModelTurn"
-  | "BeforeToolUse"
-  | "AfterToolUse"
-  | "BeforeUiPatch"
-  | "BeforeApproval"
-  | "AfterApproval"
-  | "BeforeActionExecution"
-  | "AfterActionExecution"
-  | "BeforeMemoryWrite"
-  | "OnRunStop"
-  | "BeforeCompaction";
-```
-
-Use hooks for:
-
-- redacting secrets
-- limiting DOM output size
-- blocking unsafe tool inputs
-- validating generated UI
-- enforcing approval
-- recording traces
-- enforcing run budgets
-
-If a rule must always hold, implement it as harness policy or hook, not as a prompt instruction.
-
-## MCP Loading
-
-MCP should be deferred.
-
-Do not load every MCP tool schema into every model turn.
-
-```ts
-export type McpServerSummary = {
-  name: string;
-  description: string;
-  toolCount: number;
-  categories: string[];
-  connected: boolean;
-};
-```
-
-Load MCP tool schemas only when:
-
-- intent classification matches the server category
-- planner asks for a relevant tool type
-- user explicitly requests an external app action
-
-If MCP fails:
-
-- remove unavailable tools from the manifest
-- emit `tool.unavailable`
-- explain the missing integration in the overlay
-- offer a browser/DOM fallback when possible
-
-## Interrupt And Steering
-
-Users can interrupt any run.
-
-```ts
-export type UserSteeringEvent =
-  | { type: "cancel" }
-  | { type: "pause" }
-  | { type: "resume" }
-  | { type: "redirect"; instruction: string }
-  | { type: "answer_question"; answers: Record<string, string | string[]> }
-  | { type: "approve"; decision: ApprovalDecision };
-```
-
-Rules:
-
-- `cancel` stops future tool calls.
-- `pause` blocks new tool calls.
-- `redirect` adds user instruction and replans.
-- approval decisions resume paused action flows.
-
-## Observability
-
-Store traces outside model context.
-
-```ts
-export type RunTrace = {
-  runId: string;
-  sessionId: string;
-  startedAt: string;
-  endedAt?: string;
-  states: HarnessState[];
-  modelTurns: number;
-  toolCalls: ToolResultSummary[];
-  approvals: ApprovalDecision[];
-  stopReason?: HarnessStopReason;
-  costUsd?: number;
-};
-```
-
-Do not log:
-
-- secrets
-- raw API keys
-- full private messages
-- large raw DOM dumps
-
-## Demo Run Profiles
-
-### Twitter/X Verification
-
-```ts
-{
-  family: "verify",
-  needsWebSearch: true,
-  needsDomActions: false,
-  riskLevel: "low"
-}
-```
-
-Flow:
-
-1. `dom.scan` around tweet.
-2. `dom.highlight` claim.
-3. Render `VerificationDashboard` skeleton.
-4. `web.search` public identity/source signals.
-5. `web.fetch` top sources.
-6. Patch evidence, contradictions, and confidence.
-7. Render verdict with uncertainty.
-
-### OAuth PDF Explainer
-
-```ts
-{
-  family: "understand",
-  needsWebSearch: false,
-  needsDomActions: false,
-  riskLevel: "low"
-}
-```
-
-Flow:
-
-1. `pdf.extract` selected paragraph.
-2. Render `VisualExplainer`.
-3. Patch `SequenceDiagram` steps.
-4. Add with/without PKCE toggle.
-
-### SharkAuth API Key
-
-```ts
-{
-  family: "act",
-  needsWebSearch: false,
-  needsDomActions: true,
-  riskLevel: "high"
-}
-```
-
-Flow:
-
-1. `dom.scan`.
-2. Build capability map.
-3. Render `ActionSurface`.
-4. Request approval.
-5. Execute browser action plan.
-6. Verify new key exists.
-7. Render `VerificationResult`.
-
-### Social Context
-
-```ts
-{
-  family: "respond",
-  needsWebSearch: false,
-  needsDomActions: false,
-  riskLevel: "medium"
-}
-```
-
-Flow:
-
-1. `dom.scan` selected message only.
-2. Render private `ResponseAssistant`.
-3. Generate explanation, what-not-to-say, and reply drafts.
-4. Require approval before sending or posting.
-
-## Prototype Modules
-
-Backend:
+Borrow `mi`'s `goal` concept for verification:
 
 ```txt
-backend/src/harness/run.ts
-backend/src/harness/state.ts
-backend/src/harness/events.ts
-backend/src/harness/budget.ts
-backend/src/harness/context.ts
-backend/src/harness/memory.ts
-backend/src/harness/tools/registry.ts
-backend/src/harness/tools/policy.ts
-backend/src/harness/hooks.ts
-backend/src/harness/ui/validate.ts
-backend/src/harness/approval.ts
-backend/src/harness/verification.ts
-backend/src/harness/trace.ts
+goal: produce valid, useful generated UI
+check: primitive validation + viewport fit + required trust boundary
 ```
 
-Browser/overlay:
+If the check fails, repair or fallback. Do not render unsafe UI.
+
+## Source Of Truth
+
+Active OpenSpec change:
 
 ```txt
-extension/src/content/overlayMount.tsx
-extension/src/content/domScanner.ts
-extension/src/content/hostTheme.ts
-extension/src/content/actionExecutor.ts
-extension/src/content/pageBridge.ts
-extension/src/overlay/eventStream.ts
-extension/src/overlay/renderPrimitive.tsx
+openspec/changes/dynamic-mouse-buddy-proactive-harness
 ```
-
-## Pseudocode
-
-```ts
-export async function runClickthrough(input: RunInput): Promise<HarnessResult> {
-  const run = createRun(input);
-  emit(run, { type: "state.changed", state: "receiving_intent" });
-
-  const context = await buildContextPacket(input);
-  const memory = await recallMemory(context);
-  const classification = await classifyIntent(context, memory);
-  const budget = budgetFor(classification.family);
-  const tools = await selectToolManifest(classification, context);
-
-  let plan = await planRun({ context, memory, classification, tools });
-  let ui = await validateOrRepairUi(await generateInitialUi(plan), plan);
-  emit(run, { type: "ui.patch", patch: mountUi(ui) });
-
-  while (!run.done) {
-    enforceBudget(run, budget);
-
-    const requested = await nextToolCalls(plan, run.toolResults);
-    const allowed = await applyToolPolicy(requested, context);
-
-    if (allowed.approvalRequired) {
-      const decision = await requestApproval(allowed.approval);
-      if (decision.type !== "approved") {
-        return stopRun(run, "approval_denied");
-      }
-    }
-
-    const results = await executeTools(allowed.calls);
-    run.toolResults.push(...results);
-
-    ui = await validateOrRepairUi(await updateUiFromResults(plan, results), plan);
-    emit(run, { type: "ui.patch", patch: renderPatch(ui) });
-
-    if (planRequiresAction(plan) && approvalSatisfied(run)) {
-      const execution = await executeBrowserActionPlan(plan.actionPlan);
-      const verification = await verifyResult(plan, execution);
-      return completeRun(run, verification);
-    }
-
-    if (plannerSaysDone(plan, run.toolResults)) {
-      const verification = await verifyNonActionResult(plan, run.toolResults);
-      return completeRun(run, verification);
-    }
-
-    plan = await replan(plan, run.toolResults);
-  }
-
-  return stopRun(run, "cancelled_by_user");
-}
-```
-
-## Reference Sources
-
-The clean-room lessons above were informed by public Claude Code docs on agent loops, approvals, hooks, tools, context, and best practices:
-
-- https://code.claude.com/docs/en/agent-sdk/agent-loop
-- https://code.claude.com/docs/en/how-claude-code-works
-- https://code.claude.com/docs/en/agent-sdk/user-input
-- https://code.claude.com/docs/en/features-overview
-- https://code.claude.com/docs/en/best-practices

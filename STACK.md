@@ -1,97 +1,241 @@
 # Clickthrough Stack Decision
 
-## Hackathon Scope Update
+## Current Stack Direction
 
-The live hackathon path is a read-only web copilot. It can observe page context, search/fetch sources, explain, verify, summarize, draft, compare, highlight, and prepare next steps. It must not click, submit, post, create credentials, change permissions, or mutate account state.
+Clickthrough is a lightweight cross-platform OS pointer companion built with:
 
-Browser action execution, SharkAuth automation, and full backend transport remain post-hackathon architecture. User B should focus on page perception, anchors, host theme, and context packets.
+- Wails desktop shell
+- Go native control plane
+- React overlay UI
+- TypeScript
+- Tailwind plus CSS variables
+- full MI harness port as the runtime spine
+- Obscura-style isolated browser workers for agent browsing/replay
+- Clickthrough primitive schema
+- AG-UI-style event streaming
+- browser/page perception tools
+- OS/screen perception adapters
+- provider-neutral web search/fetch tools
 
-## Current Decision
+No browser extension is required for the product shell. Ship as a Wails app: Go owns tray/global hotkeys/overlay windows/screen and OS adapters/process supervision, while TypeScript owns MI/runtime/UI logic. Browser integration is an optional connector/context provider.
 
-This is the stack direction for the hackathon prototype.
+If browser-worker isolation is needed early, run Obscura/CDP as a sidecar chamber rather than replacing the user's active browser.
 
-## Frontend
+## Shipping Shell
 
-Use:
+Locked decision:
 
-- **Vite**
-- **React**
-- **TypeScript**
+```txt
+Wails / Go desktop shell
+  -> tray
+  -> global hotkeys / push-to-talk
+  -> transparent overlay windows
+  -> screen capture and OS adapters
+  -> policy broker and execution chamber supervision
+  -> context.Context cancellation, deadlines, budgets, panic stop
+  -> TypeScript MI runtime
+  -> React primitive renderer
+  -> Obscura browser-worker chamber
+```
 
-The product should behave like a browser extension or extension-like injected overlay. The main user-facing surface is not a website. It is an overlay renderer that appears on top of the current page.
+Why:
 
-## Overlay Renderer
+- lighter than Electron
+- cross-platform for Linux and Windows
+- Go is pragmatic for native process supervision, cancellation, and OS adapters
+- React/TypeScript keeps the generated UI and MI port close to existing frontend code
+- Obscura remains isolated browser work, not the main app shell
 
-Use a React overlay renderer injected into the active page.
+## Product Shape
 
-The overlay should be variable. It is not one fixed sidebar or one fixed dashboard. Clickthrough should choose the overlay shape based on intent, page context, available space, and risk level.
+The visible product is the **AI pointer companion**.
 
-Overlay modes:
+It starts as a small CT presence near the user's point of intent:
 
-- **Inline prompt**: tiny invocation bar near the user's focus.
-- **Anchored popover**: small generated UI attached to a tweet, paragraph, form, or message.
-- **Side panel**: larger generated dashboard when the task needs evidence, diagrams, or long-running state.
-- **Spotlight overlay**: dim the page and highlight the relevant DOM region.
-- **Fullscreen workbench**: rare mode for complex visual explanation or multi-step workflows.
-- **Native insertion**: generated controls placed near matching host UI when it should feel like the page grew the missing form.
+- cursor
+- selection
+- hovered element
+- focused control
+- active page region
+- active app or screenshot region
 
-Responsibilities:
+It can show quiet proactive insight chips, then expand into the smallest useful generated interface:
 
-- mount Clickthrough UI without navigating away
-- anchor overlays to selected DOM elements
-- preserve page scroll and interaction where possible
-- render streamed primitive UI trees
-- manage prompt bar, skeletons, panels, diagrams, forms, and approval gates
-- visually adapt generated components to the host page
+- inline prompt
+- anchored popover
+- spotlight
+- side panel
+- fullscreen workbench
 
-## Component Styling
+Fixed top-right panels are fallback only.
 
-Styling is not locked yet.
+## OS Companion Layer
 
-Decision to make after Open Design output:
+The OS layer adds:
 
-- Tailwind CSS
-- CSS modules
-- vanilla CSS with CSS variables
-- Panda/vanilla-extract style token system
-- hybrid approach
+- active app/window metadata
+- screenshot capture and region crops
+- accessibility tree or OCR summaries where available
+- pointer velocity and dwell tracking
+- screen-region salience scoring
+- action target previews
+- before/after verification screenshots
+- global pause/cancel/panic controls
 
-Current bias:
+The model never receives raw continuous screen capture by default. Screen context flows through:
 
-Use CSS variables as the stable host-adaptation layer, regardless of component styling choice.
+```txt
+ScreenCaptureBroker
+  -> local redactor
+  -> sensitivity classifier
+  -> crop/context selector
+  -> policy gate
+  -> model packet
+```
 
-The renderer should map sampled page styles into variables such as:
+## Harness Shape
 
-- `--ct-font-family`
-- `--ct-text`
-- `--ct-muted`
-- `--ct-surface`
-- `--ct-border`
-- `--ct-accent`
-- `--ct-radius`
-- `--ct-density`
+Port MI as the harness:
 
-## Generative UI Protocol
+```txt
+messages + tools
+  -> model stream
+  -> tool calls
+  -> execute registered tools
+  -> append structured results
+  -> repeat until final UI/result
+```
 
-Use **AG-UI** as the primary runtime event protocol for streaming agent state into the UI.
+Clickthrough keeps MI's loop and patches execution for browser/OS safety and user trust:
 
-Use AG-UI for:
+- current frontend harness is discarded as the runtime base
+- useful frontend pieces are salvaged as tools, context providers, renderer contracts, and validation ideas
+- raw shell, browser automation, and OS actions run only through execution chambers
+- no arbitrary DOM mutation tool exposed to the model
+- no model-generated HTML/CSS/JS rendered directly
+- strict turn, tool, time, and cost budgets
+- structured tool results
+- typed state/tool/UI/result events
+- validation before render
+- deterministic fallback when validation fails
+- approval and target verification before impactful actions
 
-- intent received
-- page context extracted
-- claim or selection detected
-- search/tool progress
-- skeleton UI sections
-- partial UI tree updates
-- approval requests
-- execution progress
-- final verification/result state
+## Execution Chambers
 
-## Primitive Schema
+MI requests tools. The policy broker routes allowed requests into scoped chambers:
 
-Use Clickthrough's own primitive schema from `UI_PRIMITIVES.md`.
+- `page`: active-tab perception and approved DOM actions.
+- `screen`: screenshot crop, OCR, accessibility, app/window metadata.
+- `browser-worker`: Obscura/CDP/Playwright isolated browser work.
+- `terminal`: approved sandboxed commands only.
+- `os`: verified computer-use actions with visible session controls.
+- `web`: search, fetch, source retrieval, profile lookup.
+- `memory`: bounded session/project memory.
 
-The agent emits:
+Each chamber declares permission tier, input schema, budgets, allowed domains/paths, redaction rules, approval requirements, and verification checks.
+
+## Obscura Role
+
+Obscura is the agent's browser worker chamber, not the user's live browser context.
+
+Use it for:
+
+- rendered page fetches
+- JS-heavy source checks
+- text/link extraction
+- page screenshots for evidence
+- read-only DOM evaluation
+- replay checks before suggesting visible browser actions
+- background web investigation
+
+Do not use it to replace:
+
+- active-tab page perception
+- desktop overlay rendering
+- user's logged-in live browser state
+- approval-gated actions on the current page
+
+## Tool Policy
+
+Default tools:
+
+- `page.observe`
+- `page.scan`
+- `page.highlight`
+- `insight.score`
+- `web.search`
+- `web.fetch`
+- `ui.plan`
+- `ui.validate`
+- `ui.fitCheck`
+- `screen.observe`
+- `screen.captureCrop`
+- `screen.locate`
+- `screen.redact`
+- `browserWorker.fetchRendered`
+- `browserWorker.extractText`
+- `browserWorker.extractLinks`
+- `browserWorker.screenshot`
+- `browserWorker.evalReadOnly`
+- `browserWorker.replayCheck`
+
+Optional tools:
+
+- `memory.read`
+- `memory.write`
+- `mcp.listTools`
+- `mcp.callTool`
+- bounded specialist delegation
+
+Approval-gated browser tools:
+
+- `dom.click`
+- `dom.fill`
+- `dom.submit`
+- `external.send`
+- `credential.create`
+- `permission.change`
+- `purchase.prepare`
+- `delete.prepare`
+
+Approval-gated OS tools:
+
+- `computer.focusApp`
+- `computer.clickTarget`
+- `computer.typeText`
+- `computer.hotkey`
+- `computer.drag`
+- `computer.scroll`
+- `clipboard.writeApproved`
+- `file.applyApprovedBatch`
+- `terminal.runApprovedSandboxed`
+- `browserWorker.mutateApproved`
+
+Blocked raw tools:
+
+- shell/bash
+- arbitrary JavaScript eval
+- unscoped network access
+- unverified DOM mutation
+- raw coordinate control without verified target
+
+## UI Protocol
+
+Use AG-UI-style events for the runtime stream:
+
+- `state.changed`
+- `tool.started`
+- `tool.finished`
+- `insight.suggested`
+- `ui.patch`
+- `approval.requested` later
+- `result`
+
+The event schema is Clickthrough-owned for now. AG-UI is the reference pattern for progressive, visible agent state.
+
+## UI Schema
+
+The agent emits Clickthrough primitives:
 
 ```ts
 type ClickthroughNode = {
@@ -101,117 +245,64 @@ type ClickthroughNode = {
 };
 ```
 
-The renderer validates and maps those nodes to React components.
+The renderer owns:
 
-This keeps Clickthrough from becoming arbitrary agent-generated HTML.
+- component mapping
+- accessibility
+- responsive fit
+- host style adaptation
+- trust markers
+- action wiring
+- validation failure UI
 
-## Agent And Server
+The model never emits arbitrary HTML, JSX, CSS, scripts, or one-off components.
 
-Use a full backend. Clickthrough needs a real agent/runtime layer behind the browser overlay.
+## Page Perception
 
-The browser overlay is the interaction surface. The backend is the reasoning, tool, memory, and orchestration layer.
+Browser/page tools are first-class. The scanner should capture:
 
-Backend responsibilities:
+- URL and title
+- selected text
+- visible text summary
+- cursor position
+- hovered element and dwell time
+- focused element
+- nearby affordances
+- stable element ids
+- bounds
+- host theme
+- page type
+- sensitivity hints
 
-- receive page context, selected text, DOM maps, and user intent
-- run LLM/agent orchestration
-- stream AG-UI events back to the overlay
-- call web search and source-fetch tools
-- manage MCP app/tool connections where useful
-- decide which UI primitive tree to generate
-- validate and sanitize generated UI schema before sending it to the browser
-- plan browser actions from DOM capability maps
-- require approval before actions
-- verify completed actions
-- store lightweight session memory and preferences
-- keep API keys and sensitive credentials out of the browser content script
+Desktop/screen providers should capture:
 
-Do not overbuild:
+- active app and window title
+- window/display bounds
+- pointer position and velocity
+- selected text where available
+- focused UI element where available
+- screenshot frame or cropped target image
+- accessibility/OCR/vision region summaries
+- recent action receipts
 
-- user accounts
-- admin dashboard
-- database-heavy architecture
-- generic workflow platform
+The model receives compact packets, not raw DOM dumps.
 
-The backend should exist, but it should serve the demo directly. Spend complexity on agent orchestration, browser intelligence, and streaming generated UI, not SaaS infrastructure.
+## External Protocols
 
-Recommended backend shape:
-
-- Node/TypeScript service to match the frontend stack.
-- HTTP endpoint for initial intent requests.
-- Server-sent events or WebSocket stream for AG-UI events.
-- Tool layer for web search, source fetch, DOM action planning, and optional MCP integrations.
-- Small persistence layer only if needed for memory or demo state.
-
-## Browser Tools
-
-Browser tools are first-class. They may matter more than MCP for the demo.
-
-The core browser layer needs a deep DOM scanner.
-
-Scanner responsibilities:
-
-- collect visible text and selected text
-- identify interactive elements
-- identify forms, buttons, links, menus, tabs, tables, and dialogs
-- infer labels and accessible names
-- detect disabled, hidden, and offscreen states
-- build a capability map of what the page can do
-- produce stable element references for approved actions
-- sample host page visual style
-- identify anchor targets for overlays
-
-For UI abstraction scenes, the scanner is the magic. It lets Clickthrough say:
-
-> This page can create API keys, edit scopes, invite users, export reports, or send messages. Which intent do you mean?
-
-## Tools And MCP
-
-Use **MCP Apps** where they help quickly.
-
-Likely MCP/tool categories:
-
-- web search
-- source fetch
-- public profile lookup
-- document/PDF extraction
-- SharkAuth action bridge if useful
-
-But for the hackathon demo, browser tools and DOM intelligence are more important than broad MCP coverage.
-
-## CopilotKit
-
-Use **CopilotKit** only if it accelerates:
-
-- hotkey prompt
-- agent state wiring
-- action callbacks
-- human approval flow
-
-Do not let CopilotKit shape the visible product into chat.
-
-## Open Design
-
-Use Open Design next to generate the primitive visual system from `OPEN_DESIGN_PROMPT.md`.
-
-Open Design should produce:
-
-- primitive component visuals
-- four composed overlay examples
-- interaction states
-- design tokens
-- host-adaptation guidance
-
-After Open Design, decide the styling implementation approach.
+- **AG-UI**: reference protocol for streaming runtime state into UI.
+- **MCP Apps**: future tool discovery layer for search, fetch, profile lookup, document tools, and external capabilities.
+- **A2UI**: possible schema vocabulary influence only.
+- **CopilotKit**: optional React wiring helper only if it does not make the product look like chat.
 
 ## Build Priority
 
-The stack should optimize for the demo illusion:
-
-1. The user never leaves the page.
-2. The overlay appears instantly.
-3. Skeleton sections stream in as the agent works.
-4. The UI is visibly generated for the specific intent.
-5. The generated components borrow the page's style.
-6. Actions require approval.
-7. Results are verified in the page.
+1. Replace fixed panel behavior with pointer-native buddy and anchored prompt.
+2. Add signal capture: cursor, hover, focus, selection, screenshot region.
+3. Port MI fully as the agent runtime loop.
+4. Convert useful frontend harness pieces into MI tools/context providers/render contracts.
+5. Add Obscura-style browser-worker chamber.
+6. Add proactive local insight scoring.
+7. Add screenshot broker, redaction, and sensitivity policy.
+8. Render generated UI from validated primitive trees.
+9. Escalate surfaces only when content/risk requires more space.
+10. Add approval-gated CUA actions only after target verification and visible user confirmation.

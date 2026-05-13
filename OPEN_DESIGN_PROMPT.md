@@ -5,11 +5,11 @@ Use this prompt in Open Design to generate the visual primitive library for Clic
 ```text
 Design a comprehensive generative UI primitive system for a product called Clickthrough.
 
-Clickthrough is a browser agent that lives on top of the current webpage. The user presses a hotkey or speaks a short request, and Clickthrough generates the exact overlay interface needed for that page and intent. It is not a chatbot, sidebar, or separate app. It is a runtime interface layer for the web.
+Clickthrough is a browser-first AI pointer companion that lives on top of the current webpage and can evolve into an OS-level companion. The user presses a hotkey, holds push-to-talk, selects something, grabs the pointer buddy, or accepts a proactive chip, and Clickthrough generates the exact overlay interface needed for that page/app and intent. It is not a chatbot, sidebar, mascot, or separate assistant app. It is a runtime interface layer for the computer.
 
 The product thesis:
 
-Any page, any intent, the exact UI you need.
+Any page or app, any intent, the exact UI you need at the point of intent.
 
 The visual system must support four demo scenarios:
 
@@ -19,8 +19,8 @@ The user sees a tweet from raulgcc1 claiming: "I'm excited to announce that I'm 
 2. PDF learning
 The user reads a dense OAuth 2.0 Authorization Code with PKCE paragraph and asks: "CT, explain this visually." Clickthrough generates a visual teaching overlay with a sequence diagram, stepper, with/without PKCE toggle, and callouts explaining why intercepted authorization codes are useless without the verifier.
 
-3. SharkAuth action
-The user is inside an auth dashboard and asks: "CT, I need to create a new full-permissions API key." Clickthrough generates a native-feeling action form with key name, environment, expiration, scope matrix, risk summary, approval gate, execution log, and verified result.
+3. Current page copilot
+The user is on a dense web page and asks: "CT, help me handle this page." Clickthrough generates a Jarvis-like copilot surface with page summary, detected affordances, likely next moves, risks, source-backed side research, copyable outputs, and approval-gated action options when useful.
 
 4. Social context
 The user sees a message saying: "Sorry, I'm on my period and feel awful today," and asks: "CT, what does that mean and what do I say?" Clickthrough generates a private explanation and response assistant with a simple cycle timeline, what-not-to-say guidance, reply drafts, and tone controls.
@@ -30,11 +30,14 @@ Design the primitive library, not a single static page. The system should includ
 Important design requirements:
 
 - The same primitives must visually adapt to different host pages.
+- The same primitives must later adapt to desktop app windows and screenshot regions.
 - Components should feel native to the current page while still clearly belonging to Clickthrough.
 - Avoid generic chatbot UI, sidebars, landing-page aesthetics, glassmorphism, heavy gradients, and identical card grids.
+- Avoid cute always-on mascot behavior; the pointer companion follows intent anchors, not every cursor movement.
 - Make skeleton loading and progressive UI assembly visually obvious.
 - Use compact, high-signal product UI.
-- Include states for loading, streaming, success, error, warning, unverified, approval required, executing, and completed.
+- Include states for loading, streaming, success, error, warning, unverified, deferred action, and completed.
+- Include states for listening, capturing, redacting, thinking, pointing, action preview, approved action, blocked sensitive context, interrupted, and verified receipt.
 - Include accessibility-minded focus states and clear status communication.
 - The generated UI should look like the browser briefly created the missing interface the user needed.
 
@@ -46,6 +49,10 @@ Overlay shell:
 - AnchorHighlight
 - CTMark
 - PageDimmer
+- PointerBuddy
+- CaptureIndicator
+- VoiceTranscriptPill
+- ScreenTargetHighlight
 
 Layout:
 - Panel
@@ -91,7 +98,7 @@ Visual explanation:
 - AnnotatedDiagram
 - Stepper
 
-Action:
+Prepared action / guidance:
 - ActionPlan
 - GeneratedForm
 - ScopeMatrix
@@ -99,6 +106,9 @@ Action:
 - ExecutionLog
 - VerificationResult
 - CopyField
+- WalkthroughStep
+- ActionPreview
+- VerificationReceipt
 
 Safety:
 - RiskSummary
@@ -118,7 +128,7 @@ Then create four composed overlay mockups:
 
 - VerificationDashboard over a Twitter/X-like page.
 - VisualExplainer over a PDF reader.
-- ActionSurface inside a SharkAuth-like dashboard.
+- CurrentPageCopilot inside a dense web page.
 - ResponseAssistant over a chat-like page.
 
 End with a small design token set that can be adapted per host page:
@@ -132,4 +142,3 @@ End with a small design token set that can be adapted per host page:
 - density
 - motion timing
 ```
-

@@ -2,13 +2,13 @@
 
 ## Core Vision
 
-Clickthrough is a runtime interface layer for the web.
+Clickthrough is a runtime interface layer for the web, growing into an AI pointer companion for the whole computer.
 
 It does not make users leave the page. It does not answer beside the page. It watches the current browser context, understands the user's intent, and generates the exact overlay UI needed in that moment.
 
 The demo should prove one thing:
 
-> The browser can become intent-native.
+> The browser, and eventually the whole screen, can become intent-native.
 
 Every scene should show the same pattern:
 
@@ -17,10 +17,15 @@ Every scene should show the same pattern:
 3. Clickthrough reads the page context.
 4. It generates a beautiful, page-native overlay using GenUI primitives.
 5. The user understands, verifies, navigates, composes, or decides without navigating away.
+6. When a task needs more than explanation, CT shows an action preview, asks for approval, and verifies the result.
 
 The emotional hook:
 
 > The web quietly reshapes itself around what you meant.
+
+The strategic hook:
+
+> CT lives where your intent is: beside the cursor, over the thing you mean, with the exact UI needed to understand, verify, prepare, or act.
 
 ## Demo Format
 
@@ -46,6 +51,8 @@ No slides. No pitch deck. The product explains itself through scenes.
 ### 1. Never Leave The Page
 
 Clickthrough is invoked in place. The user does not open a separate app, sidebar, or chatbot tab. The current page remains the environment.
+
+Long term, the same rule applies beyond the browser: the current app stays the environment, and CT appears as a pointer-native companion surface over the relevant region.
 
 ### 2. Generate The Missing Interface
 
@@ -75,6 +82,8 @@ Before rendering, CT samples:
 
 Then it renders generated components that blend with the current page.
 
+In OS companion mode, CT samples the active app/window and uses screen annotations, target highlights, capture indicators, and action previews instead of pretending the desktop is a web page.
+
 Twitter/X gets an investigation overlay that feels native to a social feed.
 
 The PDF reader gets an annotation and diagram layer.
@@ -93,6 +102,18 @@ The full demo shows four kinds of intent:
 - **Respond**: "Help me understand what to say."
 
 Together, they make Clickthrough feel like a general browser agent, not a single-purpose tool.
+
+## Future Product Beat: AI Pointer Companion
+
+After the browser demo scenes, the long-term product beat is:
+
+1. The user hovers an unfamiliar control in any app.
+2. CT appears as a small pointer buddy with a capture indicator.
+3. The user asks by voice or hotkey, "what does this do?"
+4. CT points at the actual control, explains it in context, and offers a walkthrough step.
+5. If the user asks CT to do something, CT shows an action preview before any click/type/scroll.
+
+This borrows the strongest lesson from AI Pointer and Clicky: show the thing, stay in flow, and make "this" meaningful. Clickthrough's differentiation is generated task-specific UI plus stricter approval, redaction, and verification boundaries.
 
 ## Scene 1: Verify Reality On Twitter/X
 
@@ -296,7 +317,7 @@ Suggested generated sections:
 - **Prepared Output**
   - copyable checklist, message, command, summary, or decision memo
 - **Trust Boundary**
-  - "I can prepare and guide. I will not click, submit, or change this page in the hackathon MVP."
+  - "I can prepare this. I will ask before changing the page."
 
 ### Visual Moment
 
@@ -509,7 +530,7 @@ Clickthrough pushes past the chat bubble by turning the current webpage into an 
 - Do not spend too long explaining architecture during the recording.
 - Do not make the social scene mean-spirited or creepy.
 - Do not overpromise universal automation verbally. Show the moonshot through the demo.
-- Do not claim the MVP clicks, submits, or mutates pages. Action execution is post-hackathon.
+- Do not imply autonomous mutation. If CT acts, show approval, verified target, and result verification.
 - Do not call it a sidebar. It is an overlay interface layer.
 
 ## Best Final Framing

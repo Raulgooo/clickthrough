@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Clickthrough renders interfaces at runtime. The agent should not output arbitrary HTML for every task. It should compose a controlled set of atomic primitives into task-specific overlays, then let the renderer adapt those primitives to the current page.
+Clickthrough renders interfaces at runtime. The agent should not output arbitrary HTML for every task. It should compose a controlled set of atomic primitives into task-specific overlays, then let the renderer adapt those primitives to the current page, app, or OS surface.
 
 The primitive system must support the four demo intents:
 
@@ -19,7 +19,7 @@ Interaction feel:
 
 > Clickthrough should feel like a natural expansion of the cursor.
 
-The overlay should appear where user intent is already focused: selected text, cursor position, focused control, hovered element, or the visible region that triggered the request. It should grow from a small invocation surface into the exact interface needed, then collapse back out of the way.
+The overlay should appear where user intent is already focused: selected text, cursor position, focused control, hovered element, screenshot crop, app/window region, or the visible region that triggered the request. It should grow from a small invocation surface into the exact interface needed, then collapse back out of the way.
 
 ## Core Rendering Model
 
@@ -37,7 +37,7 @@ The renderer is responsible for:
 
 1. Validating the schema.
 2. Mapping primitives to real components.
-3. Applying host-page visual adaptation.
+3. Applying host-page, host-app, or OS-surface visual adaptation.
 4. Managing loading, streaming, interaction, and state.
 5. Routing approved actions to the browser/action layer.
 
@@ -94,6 +94,107 @@ Primitives are grouped by responsibility:
 8. **Safety primitives**: expose risk, uncertainty, source quality, and consent.
 9. **State primitives**: loading, streaming, errors, empty states, success.
 10. **Composite primitives**: higher-level patterns made from atomic pieces.
+
+## OS And Pointer Companion Primitives
+
+These primitives support the AI pointer companion path. They are not a mascot layer. They exist to point, explain, preview, and verify at the user's current locus of intent.
+
+### `PointerBuddy`
+
+Compact CT presence near the pointer, selection, focused control, or screen region.
+
+Props:
+
+- `status`: `"idle" | "listening" | "capturing" | "thinking" | "speaking" | "acting" | "blocked"`.
+- `anchor`: DOM, screen, cursor, selection, or app-window anchor.
+- `hint`: optional one-line proactive suggestion.
+- `activation`: `"hotkey" | "push_to_talk" | "pointer_grab" | "selection" | "chip"`.
+
+Rules:
+
+- Follow intent anchors, not every raw cursor movement.
+- Decay or hide after dismissal.
+- Never hide the exact target being referenced.
+
+### `ScreenTargetHighlight`
+
+Highlight or halo for a DOM element, app control, document region, screenshot crop, or accessibility target.
+
+Props:
+
+- `targetId`: stable target id when available.
+- `bounds`: viewport or screen bounds.
+- `targetKind`: `"dom" | "accessibility" | "ocr" | "screenshot" | "selection"`.
+- `confidence`: `0-1`.
+- `label`: short label.
+
+Rules:
+
+- Prefer DOM or accessibility binding over pixel-only coordinates.
+- If the target is off-screen, pair with an approved scroll/focus preview.
+
+### `CaptureIndicator`
+
+Visible state for context capture.
+
+Props:
+
+- `scope`: `"page" | "active_window" | "crop" | "microphone" | "ocr" | "accessibility"`.
+- `redaction`: `"not_needed" | "pending" | "applied" | "blocked_sensitive"`.
+- `retention`: `"ephemeral" | "session" | "saved_by_user"`.
+
+Use when:
+
+- CT reads page context, microphone input, screenshot crops, OCR, or accessibility metadata.
+
+### `VoiceTranscriptPill`
+
+Short visible transcript of push-to-talk input or spoken output.
+
+Props:
+
+- `direction`: `"user" | "ct"`.
+- `text`: transcript text.
+- `state`: `"listening" | "transcribing" | "final" | "error"`.
+
+### `WalkthroughStep`
+
+A guided teaching/action step tied to the current app/page.
+
+Props:
+
+- `stepIndex`: number.
+- `title`: short instruction.
+- `target`: optional target id or bounds.
+- `explanation`: short supporting text.
+- `action`: optional prepared action.
+
+### `ActionPreview`
+
+Pre-execution preview for browser or OS actions.
+
+Props:
+
+- `actionKind`: `"click" | "type" | "scroll" | "drag" | "hotkey" | "focus_app" | "clipboard" | "submit"`.
+- `target`: verified target summary.
+- `reason`: why this action is proposed.
+- `risk`: `"low" | "medium" | "high" | "handoff"`.
+- `expectedResult`: expected postcondition.
+
+Rules:
+
+- Required before mutating browser/OS actions unless the user has already granted a scoped automation tier.
+
+### `VerificationReceipt`
+
+Post-action or post-claim result.
+
+Props:
+
+- `expected`: expected result.
+- `observed`: observed result.
+- `status`: `"matched" | "mismatch" | "uncertain" | "failed"`.
+- `evidence`: optional source or screenshot summaries.
 
 ## 1. Shell Primitives
 
@@ -702,8 +803,8 @@ Props:
 
 Use when:
 
-- SharkAuth API key flow.
-- CRM email send flow.
+- Preparing a draft or checklist for the user.
+- Post-MVP approved workflows.
 
 ### `ScopeMatrix`
 
@@ -718,8 +819,8 @@ Props:
 
 Use when:
 
-- API keys.
-- OAuth permissions.
+- Explaining permission scopes.
+- Previewing approval-gated choices.
 
 ### `ApprovalGate`
 
@@ -751,7 +852,8 @@ Props:
 
 Use when:
 
-- Browser automation is executing.
+- Showing approval-gated browser automation progress.
+- Showing read-only tool progress when a step-by-step log is clearer than a progress list.
 
 ### `VerificationResult`
 
@@ -766,8 +868,8 @@ Props:
 
 Use when:
 
-- After creating an API key.
-- After sending a message.
+- After a read-only verification/check finishes.
+- Post-MVP after an approved action is verified.
 
 ### `CopyField`
 
@@ -782,9 +884,9 @@ Props:
 
 Use when:
 
-- API keys.
-- Environment variables.
-- Generated commands.
+- Draft replies.
+- Environment variables or generated commands.
+- Any useful generated value the user may copy manually.
 
 ## 8. Safety And Trust Primitives
 
@@ -798,7 +900,7 @@ Props:
 
 Use when:
 
-- Full-permission API key.
+- Risky recommendations.
 - Reply drafting.
 - Ambiguous claims.
 
@@ -832,7 +934,7 @@ Props:
 Use when:
 
 - Social/health explanations.
-- API key creation.
+- Credential, account, payment, legal, or private contexts.
 - Risky workflows.
 
 ### `PrivateModeBadge`
@@ -1011,22 +1113,19 @@ Contains:
 }
 ```
 
-### SharkAuth API Key Creator
+### Current Page Copilot
 
 ```json
 {
   "type": "OverlayRoot",
-  "props": { "intent": "act", "mode": "panel" },
+  "props": { "intent": "navigate", "mode": "anchored_popover" },
   "children": [
     {
       "type": "ActionSurface",
       "children": [
         { "type": "ActionPlan" },
-        { "type": "GeneratedForm" },
-        { "type": "ScopeMatrix" },
         { "type": "RiskSummary" },
-        { "type": "ApprovalGate" },
-        { "type": "ExecutionLog" },
+        { "type": "ProgressList" },
         { "type": "VerificationResult" }
       ]
     }
@@ -1071,6 +1170,8 @@ Contains:
 - Stream skeletons before final content when work takes more than 300ms.
 - Preserve the user's current page position.
 - Do not hijack scroll unless the overlay is fullscreen.
+- In OS companion mode, do not occlude the active control the user is trying to operate.
+- Screen annotation overlays must show target confidence and keep a visible CT trust marker.
 - Keep follow-up prompts close to the generated UI.
 - Use approval before action.
 - Show execution progress and verification after action.
@@ -1088,64 +1189,6 @@ Contains:
 
 ## Open Design Prompt
 
-Use this prompt in Open Design to create the component primitive visual system.
+The canonical Open Design prompt now lives in `OPEN_DESIGN_PROMPT.md`.
 
-```text
-Design a comprehensive generative UI primitive system for a product called Clickthrough.
-
-Clickthrough is a browser agent that lives on top of the current webpage. The user presses a hotkey or speaks a short request, and Clickthrough generates the exact overlay interface needed for that page and intent. It is not a chatbot, sidebar, or separate app. It is a runtime interface layer for the web.
-
-The visual system must support four demo scenarios:
-
-1. Twitter/X verification: the user sees a tweet claiming "I'm excited to announce that I'm joining Amazon as a summer intern!" and asks, "Hey CT, is this true?" Clickthrough highlights the claim and generates a live evidence dashboard over the tweet with skeleton loading, identity matching, source cards, contradictions, confidence, and a verdict.
-
-2. PDF learning: the user reads a dense OAuth 2.0 Authorization Code with PKCE paragraph and asks, "CT, explain this visually." Clickthrough generates a visual teaching overlay with a sequence diagram, stepper, with/without PKCE toggle, and callouts explaining why intercepted codes are useless without the verifier.
-
-3. SharkAuth action: the user is inside an auth dashboard and asks, "CT, I need to create a new full-permissions API key." Clickthrough generates a native-feeling action form with key name, environment, expiration, scope matrix, risk summary, approval gate, execution log, and verified result.
-
-4. Social context: the user sees a message saying, "Sorry, I'm on my period and feel awful today," and asks, "CT, what does that mean and what do I say?" Clickthrough generates a private explanation and response assistant with a simple cycle timeline, what-not-to-say guidance, reply drafts, and tone controls.
-
-Design the primitive library, not a single static page. The system should include atomic components and several composed examples.
-
-Important design requirements:
-
-- The same primitives must be able to visually adapt to different host pages.
-- Components should feel native to the current page while still clearly belonging to Clickthrough.
-- Avoid generic chatbot UI, sidebars, landing-page aesthetics, glassmorphism, heavy gradients, and identical card grids.
-- Make skeleton loading and progressive UI assembly visually obvious.
-- Use compact, high-signal product UI.
-- Include states for loading, streaming, success, error, warning, unverified, approval required, executing, and completed.
-- Include accessibility-minded focus states and clear status communication.
-
-Create visual designs for these primitive categories:
-
-- Overlay shell: OverlayRoot, PromptBar, AnchorHighlight, CTMark, PageDimmer.
-- Layout: Panel, Section, Stack, Grid, SplitPane, Rail.
-- Text/status: Heading, BodyText, StatusPill, Callout, InlineQuote.
-- Inputs: Button, IconButton, TextField, TextArea, Select, Toggle, SegmentedControl, Slider, CheckboxList.
-- Evidence: ClaimCard, IdentityCard, EvidenceSource, SourceStack, ContradictionList, ConfidenceMeter, VerdictCard, SourceTrail.
-- Visual explanation: Timeline, SequenceDiagram, FlowDiagram, ComparisonTable, AnnotatedDiagram, Stepper.
-- Action: ActionPlan, GeneratedForm, ScopeMatrix, ApprovalGate, ExecutionLog, VerificationResult, CopyField.
-- Safety: RiskSummary, UncertaintyNote, SourceQualityBadge, SensitiveContextGuard, PrivateModeBadge.
-- State: Skeleton, ProgressList, EmptyState, ErrorState, SuccessState.
-
-Then create four composed overlay mockups:
-
-- VerificationDashboard over a Twitter/X-like page.
-- VisualExplainer over a PDF reader.
-- ActionSurface inside a SharkAuth-like dashboard.
-- ResponseAssistant over a chat-like page.
-
-The design should feel like the browser briefly generated the missing interface the user needed.
-
-End with a small design token set that can be adapted per host page:
-
-- typography
-- spacing
-- radius
-- border
-- shadow
-- color roles
-- density
-- motion timing
-```
+Keep that prompt aligned with this primitive catalog. It must include browser-first overlays, OS companion extension points, pointer buddy behavior, screen target highlights, capture indicators, voice transcript states, walkthrough steps, action previews, and verification receipts.

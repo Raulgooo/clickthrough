@@ -1,107 +1,152 @@
 # Clickthrough Agent Loop
 
-## Hackathon Scope Update
+## Core Decision
 
-The live loop is read-only: observe page, classify intent, produce a style brief, run read-only tools, generate validated UI, ground sources/uncertainty, and stream the result. Mutating browser actions are deferred and should become guidance, drafts, checklists, or a post-MVP action boundary rather than executable steps.
+Reconstruct the Clickthrough harness by porting MI fully as the runtime spine.
 
-## Goal
-
-Clickthrough should be its own browser-native intent agent. It must not depend on one model, one tool provider, or one app integration.
-
-The architecture should work with both dumb and smart models by making the harness strong:
-
-- explicit state machine
-- typed context packets
-- bounded memory
-- small tool contracts
-- validated UI schema
-- approval gates
-- deterministic execution and verification
-
-The model should decide and synthesize. The harness should constrain, validate, route, and recover.
-
-## Agent Identity
-
-Clickthrough is not a wrapper around another assistant. It owns the browser intent loop.
-
-Clickthrough owns:
-
-- browser page understanding
-- intent classification
-- DOM capability mapping
-- generated overlay UI
-- tool routing
-- user approval
-- action execution
-- verification
-- short-term and long-term memory
-
-Clickthrough may delegate to specialist tools:
-
-- web search
-- source fetch
-- PDF/document extraction
-- MCP apps
-- browser DOM tools
-
-The user talks to CT. CT decides what tools to use.
-
-## Core Loop
+`mi` has the right loop:
 
 ```txt
-Observe -> Recall -> Classify Intent -> Plan -> Generate UI -> Ask Approval -> Act -> Verify -> Remember
+call model
+  -> stream response
+  -> execute requested tools
+  -> feed tool results back
+  -> repeat until done
 ```
 
-For some intents, steps are skipped:
+Clickthrough needs MI's actual agentic shape, not a light frontend imitation. The current frontend harness should be retired as the orchestrator. Salvage its page tools, context packets, primitive contracts, renderer ideas, and validation helpers, then run them as MI-facing capabilities behind policy gates.
 
-- Verify: `Observe -> Recall -> Plan investigation -> Generate evidence UI -> Search -> Update UI -> Verdict -> Remember`
-- Understand: `Observe -> Recall -> Extract content -> Generate explainer UI -> Refine -> Remember`
-- Act: `Observe -> Recall -> Map capabilities -> Generate action UI -> Ask approval -> Act -> Verify -> Remember`
-- Respond: `Observe -> Recall -> Explain context -> Generate draft UI -> User edits -> Remember`
+## Loop Shape
 
-## State Machine
+```txt
+screen/page signals + user intent/proactive insight
+  -> observe context
+  -> MI model/planner turn
+  -> MI requested tools?
+      -> route through policy broker
+      -> execute inside allowed chamber
+      -> emit tool progress
+      -> feed structured results back
+      -> loop
+  -> surface plan
+  -> primitive tree
+  -> validate + fit check
+  -> stream generated UI
+  -> result
+```
 
-Use explicit states instead of free-form agent flow.
+The loop is iterative. It is not a single classify/search/generate function.
+
+## Execution Chambers
+
+MI has powerful tool execution. Clickthrough keeps that power and patches where it can run.
+
+```txt
+MI tool request
+  -> PolicyBroker
+  -> CapabilityResolver
+  -> ExecutionChamber
+  -> StructuredResult
+  -> Goal/verification check
+```
+
+Chambers:
+
+- `page`: active user tab context and approved DOM actions.
+- `screen`: OS/app/window context, screenshot crops, OCR, accessibility.
+- `browser-worker`: isolated Obscura/CDP/Playwright worker for agent browsing.
+- `terminal`: approved sandboxed commands only.
+- `os`: visible CUA actions with verified targets.
+- `web`: search/fetch/source tools.
+- `memory`: bounded memory.
+
+The user's real browser remains the source of truth for what the user sees. Obscura is for the agent's isolated browsing, replay, rendered fetches, extraction, and evidence collection.
+
+## Browser-Safe Tool Registry
+
+Default tools:
+
+```txt
+page.observe
+page.scan
+page.highlight
+insight.score
+web.search
+web.fetch
+ui.plan
+ui.validate
+ui.fitCheck
+browserWorker.fetchRendered
+browserWorker.extractText
+browserWorker.extractLinks
+browserWorker.screenshot
+browserWorker.evalReadOnly
+browserWorker.replayCheck
+```
+
+Allowed with constraints:
+
+```txt
+memory.read
+memory.write
+mcp.listTools
+mcp.callTool
+delegate.specialist
+```
+
+Approval-gated action tools:
+
+```txt
+dom.click
+dom.fill
+dom.submit
+external.send
+credential.create
+permission.change
+purchase.prepare
+delete.prepare
+```
+
+Blocked raw tools:
+
+```txt
+shell.run
+page.eval
+unscoped.network
+unverified.mutation
+raw.coordinateControl
+```
+
+The model can request tools. The harness decides whether the tool exists and whether it is allowed.
+
+## Dynamic Mouse Buddy States
 
 ```ts
-type AgentState =
+type BuddyState =
   | "idle"
-  | "observing_page"
-  | "recalling_context"
-  | "classifying_intent"
-  | "planning"
-  | "generating_ui"
-  | "waiting_for_user"
-  | "running_tools"
-  | "awaiting_approval"
-  | "executing_action"
-  | "verifying_result"
-  | "remembering"
-  | "completed"
-  | "failed";
+  | "aware"
+  | "hinting"
+  | "prompt"
+  | "thinking"
+  | "expanded"
+  | "minimized";
 ```
 
-Every state transition should emit an AG-UI event so the overlay can show progress.
+State intent:
+
+- `idle`: CT is quiet.
+- `aware`: CT has cursor/selection/hover/focus context.
+- `hinting`: CT shows a quiet proactive insight.
+- `prompt`: user is giving intent.
+- `thinking`: harness is running and streaming progress.
+- `expanded`: generated UI is visible.
+- `minimized`: CT remains as a compact anchor.
+
+The buddy should not chase the cursor constantly. It should snap to meaningful intent anchors and stay out of the way.
 
 ## Context Packets
 
-The model should receive structured packets, not a raw browser dump.
-
-### `UserIntentPacket`
-
-```ts
-type UserIntentPacket = {
-  prompt: string;
-  inputMode: "text" | "voice" | "hotkey";
-  selectedText?: string;
-  anchorElementId?: string;
-  pageUrl: string;
-  pageTitle: string;
-  timestamp: string;
-};
-```
-
-### `PageContextPacket`
+The model receives structured context, not raw DOM.
 
 ```ts
 type PageContextPacket = {
@@ -109,345 +154,140 @@ type PageContextPacket = {
   title: string;
   visibleText: string;
   selectedText?: string;
+  cursorPosition?: { x: number; y: number };
+  hoveredElement?: DomElementSummary & { dwellMs: number };
   focusedElement?: DomElementSummary;
   nearbyElements: DomElementSummary[];
-  capabilityMap: PageCapability[];
-  hostTheme: HostThemeSummary;
+  capabilityMap: PageCapabilitySummary[];
+  hostTheme: HostTheme;
+  sensitivity?: "none" | "private" | "credential" | "payment" | "account" | "health" | "legal";
 };
 ```
 
-### `MemoryPacket`
-
-Start with bounded memory. Twenty recent messages or events is acceptable for the prototype.
+For OS companion mode, use a parallel packet:
 
 ```ts
-type MemoryPacket = {
-  recentTurns: AgentTurn[];
-  userPreferences: UserPreference[];
-  siteMemories: SiteMemory[];
+type OsContextPacket = {
+  activeApp: string;
+  windowTitle: string;
+  displayBounds: { width: number; height: number };
+  windowBounds?: { x: number; y: number; width: number; height: number };
+  pointer: { x: number; y: number; velocity: number };
+  selectedText?: string;
+  focusedElement?: string;
+  hoveredRegion?: {
+    id: string;
+    kind: "button" | "input" | "text" | "image" | "table" | "dialog" | "code" | "unknown";
+    label?: string;
+    bounds: { x: number; y: number; width: number; height: number };
+    dwellMs: number;
+  };
+  visibleRegions: Array<{
+    id: string;
+    kind: string;
+    bounds: { x: number; y: number; width: number; height: number };
+    summary: string;
+    confidence: number;
+  }>;
+  screenshot?: { id: string; crop?: string; hash: string };
+  sensitivity: "none" | "private" | "credential" | "payment" | "account" | "health" | "legal" | "work";
+  recentActions: string[];
 };
 ```
 
-Rules:
+## Proactive Insight
 
-- Keep short-term memory bounded.
-- Summarize older turns into compact preferences.
-- Never let memory override current page evidence.
-- Treat remembered preferences as hints, not truth.
-
-## Intent Classification
-
-Classify the user's request into one or more intent families:
+Proactive does not mean autonomous action.
 
 ```ts
-type IntentFamily =
-  | "verify"
-  | "understand"
-  | "act"
-  | "respond"
-  | "navigate"
-  | "summarize"
-  | "unknown";
-```
-
-Classifier output:
-
-```ts
-type IntentClassification = {
-  family: IntentFamily;
-  confidence: number;
-  target?: "claim" | "selection" | "page" | "form" | "message" | "workflow";
-  needsWebSearch: boolean;
-  needsDomActions: boolean;
-  needsApproval: boolean;
-  riskLevel: "low" | "medium" | "high";
-};
-```
-
-Harness rule:
-
-- Low-confidence classification should generate a clarification UI, not guess.
-- Action intents with medium/high risk require approval.
-- Verification intents must expose uncertainty.
-
-## Planner
-
-The planner decides what should happen, but does not execute browser actions directly.
-
-Planner output:
-
-```ts
-type AgentPlan = {
-  goal: string;
-  intent: IntentClassification;
-  uiMode: OverlayMode;
-  toolCalls: PlannedToolCall[];
-  actionPlan?: BrowserActionPlan;
-  expectedResult: string;
-  risks: RiskItem[];
-};
-```
-
-Overlay modes:
-
-```ts
-type OverlayMode =
-  | "inline_prompt"
-  | "anchored_popover"
-  | "side_panel"
-  | "spotlight"
-  | "fullscreen_workbench"
-  | "native_insertion";
-```
-
-Planner rules:
-
-- Prefer the smallest overlay that solves the task.
-- Use side panels for evidence-heavy or diagram-heavy work.
-- Use anchored popovers for local context.
-- Use spotlight overlays for claim/selection/page-target emphasis.
-- Use native insertion when generated controls should feel like the page grew a missing form.
-
-## Tool Layer
-
-Tools should be small, typed, and boring.
-
-The model requests tools through explicit contracts. The harness executes them.
-
-Examples:
-
-```ts
-type ToolCall =
-  | { name: "web.search"; input: { query: string; recencyDays?: number } }
-  | { name: "web.fetch"; input: { url: string } }
-  | { name: "dom.scan"; input: { includeHidden?: boolean } }
-  | { name: "dom.highlight"; input: { elementId: string; label?: string } }
-  | { name: "dom.click"; input: { elementId: string } }
-  | { name: "dom.fill"; input: { elementId: string; value: string } }
-  | { name: "pdf.extract"; input: { pageRange?: string; selection?: string } }
-  | { name: "memory.write"; input: { key: string; value: string; scope: "user" | "site" } };
-```
-
-Tool rules:
-
-- The model never gets direct arbitrary browser execution.
-- Tools return structured results.
-- Tool failures are normal and must be reflected in UI.
-- Browser action tools require stable element ids from the DOM scanner.
-- Sensitive action tools require prior approval.
-
-## DOM Scanner
-
-The DOM scanner is a core subsystem.
-
-It should produce a capability map that weaker models can reason over.
-
-```ts
-type PageCapability = {
+type ProactiveInsight = {
   id: string;
-  label: string;
-  kind:
-    | "button"
-    | "link"
-    | "form"
-    | "input"
-    | "select"
-    | "table"
-    | "menu"
-    | "dialog"
-    | "tab"
-    | "workflow"
-    | "unknown";
-  elementIds: string[];
   confidence: number;
-  description?: string;
+  kind: "verify" | "understand" | "summarize" | "respond" | "navigate" | "risk";
+  anchor: UIAnchorIntent;
+  title: string;
+  preview: string;
+  suggestedPrompt: string;
+  urgency: "quiet" | "normal" | "important";
 };
 ```
 
-Scanner responsibilities:
+Only quiet suggestions should appear without explicit user request. A proactive insight becomes a normal harness run only after the user accepts it.
 
-- visible text extraction
-- selected text extraction
-- accessible name extraction
-- form field grouping
-- button/link/menu detection
-- table and list detection
-- modal/dialog detection
-- hidden/offscreen state detection
-- host theme sampling
-- stable element reference creation
-- nearby context around focused/selected elements
+## AI Pointer Principles
 
-## UI Generation
+Clickthrough should follow these principles:
 
-The model emits a Clickthrough UI tree, not arbitrary HTML.
+1. **Maintain flow**: CT appears where the user already works.
+2. **Show and tell**: pointing, selection, screenshot crops, and voice/text combine into intent.
+3. **Make "this" and "that" meaningful**: the harness resolves references from pointer context.
+4. **Turn pixels into entities**: screenshots become typed regions, targets, risks, and actions.
+
+The companion follows intent anchors, not raw cursor pixels. Constant chasing is wrong; stable snapping is right.
+
+## Permission Tiers
+
+```txt
+T0 Observe Local       local screen/window metadata only
+T1 Explain             redacted screenshot/model allowed, no action
+T2 Prepare             drafts, values, steps; user applies manually
+T3 Assisted Action     click/type/scroll with visible session controls
+T4 Scoped Automation   bounded goal, app/domain, action set, time/action budget
+T5 High-Risk Approval  send/delete/buy/permissions/credentials; confirm at point of risk
+T6 Hand-Off Only       CAPTCHA, final financial transfer, password finalization, medical/legal final action
+```
+
+The harness may downgrade any request to a lower tier. The model cannot upgrade itself.
+
+## Event Stream
+
+Every meaningful transition emits a typed event:
 
 ```ts
-type GeneratedUI = {
-  overlayMode: OverlayMode;
-  root: ClickthroughNode;
-  requiredActions?: UIActionBinding[];
-  safety: UISafetySummary;
-};
+type HarnessEvent =
+  | { type: "state.changed"; state: HarnessState; message?: string }
+  | { type: "insight.suggested"; insight: ProactiveInsight }
+  | { type: "tool.started"; call: ToolCallSummary }
+  | { type: "tool.finished"; result: ToolResultSummary }
+  | { type: "ui.patch"; patch: UiPatch }
+  | { type: "result"; result: HarnessResult };
 ```
 
-Validation rules:
+The first implementation can use an async iterable. SSE, WebSocket, extension ports, or subprocess streams are adapters later.
 
-- Unknown primitive types are rejected.
-- Props are validated by primitive type.
-- Action buttons must bind to known action ids.
-- Dangerous actions must be behind `ApprovalGate`.
-- Medical/legal/financial/security contexts must include a guard or uncertainty note.
-- Generated UI must include loading/error states for long-running tools.
+## UI Output Contract
 
-## Approval
+The model should produce a surface plan plus primitives:
 
-Approval is a harness-level requirement, not a model suggestion.
-
-Require approval for:
-
-- destructive actions
-- account changes
-- permission changes
-- external sends/posts/messages
-- payments/billing
-- credential/API-key creation
-- form submission with sensitive data
-
-Approval packet:
-
-```ts
-type ApprovalRequest = {
-  actionPlanId: string;
-  summary: string;
-  steps: string[];
-  risks: RiskItem[];
-  approveLabel: string;
-  cancelLabel: string;
-};
+```txt
+surface plan -> data model -> primitive tree -> safety summary
 ```
 
-## Execution
+The renderer validates and renders:
 
-Execution should be deterministic.
+- known primitive names only
+- safe props only
+- action ids from an allowed list
+- no arbitrary HTML
+- no raw CSS
+- no script
+- viewport-safe placement
+- CT trust mark visible
 
-The executor receives an approved `BrowserActionPlan` and runs browser tools step by step.
+## Safety Rules
 
-```ts
-type BrowserActionPlan = {
-  id: string;
-  steps: BrowserActionStep[];
-};
+- Proactive observation and insight can happen without explicit prompts.
+- Impactful action requires explicit approval, verified targets, and visible risk.
+- Raw mutation tools are unavailable; only scoped browser capabilities can act.
+- Browser-worker automation is isolated from the user's active tab and cannot mutate user state without an approved bridge.
+- Sensitive pages suppress proactive model calls until the user engages.
+- Verification must expose uncertainty and sources.
+- The harness owns policy. The model cannot approve its own actions.
 
-type BrowserActionStep =
-  | { kind: "click"; elementId: string }
-  | { kind: "fill"; elementId: string; value: string }
-  | { kind: "select"; elementId: string; value: string }
-  | { kind: "waitFor"; condition: string; timeoutMs: number }
-  | { kind: "verify"; assertion: string };
+## Implementation Rule
+
+When the current frontend harness conflicts with this document, prefer this document and the OpenSpec change:
+
+```txt
+openspec/changes/dynamic-mouse-buddy-proactive-harness
 ```
-
-Execution rules:
-
-- Stop on first unexpected failure.
-- Stream progress to UI.
-- Ask the planner to recover only when safe.
-- Never silently continue after acting on the wrong element.
-
-## Verification
-
-Every action flow ends with verification.
-
-Verification can use:
-
-- DOM state
-- visible success messages
-- URL changes
-- new table/list rows
-- generated values
-- API response if available
-
-Verification output:
-
-```ts
-type VerificationResult = {
-  status: "success" | "failed" | "partial" | "unknown";
-  summary: string;
-  evidence: string[];
-  nextActions?: string[];
-};
-```
-
-## Model-Agnostic Prompting Strategy
-
-Make the model's job narrow.
-
-Instead of asking:
-
-> What should we do?
-
-Ask:
-
-> Given this intent classification, page capability map, and available primitives, produce an `AgentPlan` that satisfies this schema.
-
-Then:
-
-> Given this validated plan and these tool results, produce a `GeneratedUI` tree using only allowed primitives.
-
-Then:
-
-> Given this approved action plan and tool results, summarize verification.
-
-This makes the system usable with weaker models and better with stronger ones.
-
-## Error Recovery
-
-Common failures:
-
-- low confidence intent
-- missing target element
-- web search unavailable
-- source contradiction
-- schema validation failure
-- action element disappeared
-- verification unknown
-
-Recovery behavior:
-
-- Generate clarification UI for ambiguous intent.
-- Show uncertainty instead of hiding it.
-- Retry tool calls with narrower inputs.
-- Ask for approval again if action plan changes.
-- Fall back to explanation when action is unsafe.
-- Preserve page state when failing.
-
-## Minimum Prototype Memory
-
-Start simple:
-
-- last 20 agent/user turns
-- current page session state
-- user preferences captured explicitly
-- site-specific successful workflow notes
-
-Example memories:
-
-- "User prefers source-heavy verification."
-- "On SharkAuth, full-permission keys require approval and a warning."
-- "When explaining CS topics, user likes diagrams first."
-
-## Why This Harness Works
-
-Smart models can reason deeply inside the loop.
-
-Dumb models still succeed because the harness gives them:
-
-- structured context
-- explicit intent classes
-- limited tool contracts
-- validated UI primitives
-- deterministic execution
-- approval boundaries
-- verification requirements
-
-The product quality comes from the loop, not from hoping the model improvises correctly.
